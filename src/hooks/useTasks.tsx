@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,13 +45,31 @@ export const useTasks = () => {
       console.log('User roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
       
-      // Build the query based on user role
+      // First, fetch all subjects separately
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('id, name');
+
+      if (subjectsError) {
+        console.error('Error fetching subjects:', subjectsError);
+        setError('Failed to fetch subjects');
+        return;
+      }
+
+      console.log('Fetched subjects:', subjectsData);
+
+      // Create a lookup map for subjects
+      const subjectsMap = (subjectsData || []).reduce((acc, subject) => {
+        acc[subject.id] = subject;
+        return acc;
+      }, {} as Record<string, { id: string; name: string }>);
+
+      // Build the tasks query based on user role
       let query = supabase
         .from('tasks')
         .select(`
           *,
-          students(name, email),
-          subjects(name)
+          students(name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -70,7 +87,7 @@ export const useTasks = () => {
         return;
       }
 
-      console.log('Raw tasks data from database with subjects join:', tasksData);
+      console.log('Raw tasks data from database:', tasksData);
 
       if (!tasksData || tasksData.length === 0) {
         console.log('No tasks found');
@@ -78,30 +95,30 @@ export const useTasks = () => {
         return;
       }
 
-      // Check if subjects are properly joined
-      const tasksWithSubjects = tasksData.filter(task => task.subjects?.name);
-      const tasksWithoutSubjects = tasksData.filter(task => !task.subjects?.name);
+      // Manually attach subject data to each task
+      const tasksWithSubjects = tasksData.map(task => ({
+        ...task,
+        subjects: subjectsMap[task.subject_id] ? { name: subjectsMap[task.subject_id].name } : null
+      }));
+
+      console.log('Tasks with manually attached subjects:', tasksWithSubjects);
       
-      console.log('Tasks with subjects:', tasksWithSubjects.length);
-      console.log('Tasks without subjects:', tasksWithoutSubjects.length);
+      // Verify the subject attachment worked
+      const tasksWithSubjectNames = tasksWithSubjects.filter(task => task.subjects?.name);
+      const tasksWithoutSubjectNames = tasksWithSubjects.filter(task => !task.subjects?.name);
       
-      if (tasksWithoutSubjects.length > 0) {
-        console.log('Tasks missing subject data:', tasksWithoutSubjects.map(t => ({ id: t.id, subject_id: t.subject_id })));
-        
-        // Fetch all subjects separately to check what exists
-        const { data: allSubjects, error: subjectsError } = await supabase
-          .from('subjects')
-          .select('*');
-          
-        console.log('All subjects in database:', allSubjects);
-        
-        if (subjectsError) {
-          console.error('Error fetching all subjects:', subjectsError);
-        }
+      console.log('Tasks with subject names:', tasksWithSubjectNames.length);
+      console.log('Tasks without subject names:', tasksWithoutSubjectNames.length);
+      
+      if (tasksWithoutSubjectNames.length > 0) {
+        console.log('Tasks missing subject data:', tasksWithoutSubjectNames.map(t => ({ 
+          id: t.id, 
+          subject_id: t.subject_id, 
+          available_subjects: Object.keys(subjectsMap)
+        })));
       }
       
-      console.log('Final tasks with subjects:', tasksData);
-      setTasks(tasksData);
+      setTasks(tasksWithSubjects);
 
     } catch (error) {
       console.error('Error in fetchTasks:', error);
