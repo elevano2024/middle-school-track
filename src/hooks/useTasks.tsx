@@ -41,7 +41,7 @@ export const useTasks = () => {
     }
 
     try {
-      console.log('=== FETCHING TASKS WITH SUBJECT DATA ===');
+      console.log('=== FETCHING TASKS ===');
       console.log('User ID:', user.id);
       console.log('User roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
@@ -51,8 +51,7 @@ export const useTasks = () => {
         .from('tasks')
         .select(`
           *,
-          students(name, email),
-          subjects(name)
+          students(name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -72,44 +71,44 @@ export const useTasks = () => {
 
       console.log('Raw tasks data from database:', tasksData);
 
-      // If we got tasks but subjects are null, let's fetch subjects separately
-      if (tasksData && tasksData.length > 0) {
-        // Check if any tasks have null subjects
-        const tasksWithNullSubjects = tasksData.filter(task => !task.subjects);
-        
-        if (tasksWithNullSubjects.length > 0) {
-          console.log('Some tasks have null subjects, fetching subjects separately...');
-          
-          // Get all unique subject IDs
-          const subjectIds = [...new Set(tasksData.map(task => task.subject_id))];
-          console.log('Subject IDs to fetch:', subjectIds);
-          
-          // Fetch subjects separately
-          const { data: subjectsData, error: subjectsError } = await supabase
-            .from('subjects')
-            .select('id, name')
-            .in('id', subjectIds);
-
-          if (subjectsError) {
-            console.error('Error fetching subjects:', subjectsError);
-          } else {
-            console.log('Fetched subjects separately:', subjectsData);
-            
-            // Map subjects back to tasks
-            const enrichedTasks = tasksData.map(task => ({
-              ...task,
-              subjects: task.subjects || subjectsData?.find(s => s.id === task.subject_id) || null
-            }));
-            
-            console.log('Enriched tasks with subjects:', enrichedTasks);
-            setTasks(enrichedTasks);
-            return;
-          }
-        }
+      if (!tasksData || tasksData.length === 0) {
+        console.log('No tasks found');
+        setTasks([]);
+        return;
       }
 
-      console.log('Final tasks data:', tasksData);
-      setTasks(tasksData || []);
+      // Get all unique subject IDs from the tasks
+      const subjectIds = [...new Set(tasksData.map(task => task.subject_id))];
+      console.log('Subject IDs to fetch:', subjectIds);
+      
+      // Fetch subjects separately to ensure we get the subject names
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('id, name')
+        .in('id', subjectIds);
+
+      if (subjectsError) {
+        console.error('Error fetching subjects:', subjectsError);
+        setError('Failed to fetch subject information');
+        return;
+      }
+
+      console.log('Fetched subjects:', subjectsData);
+      
+      // Create a map for quick subject lookup
+      const subjectsMap = new Map();
+      subjectsData?.forEach(subject => {
+        subjectsMap.set(subject.id, subject);
+      });
+
+      // Map subjects back to tasks
+      const enrichedTasks = tasksData.map(task => ({
+        ...task,
+        subjects: subjectsMap.get(task.subject_id) || null
+      }));
+      
+      console.log('Final enriched tasks with subjects:', enrichedTasks);
+      setTasks(enrichedTasks);
 
     } catch (error) {
       console.error('Error in fetchTasks:', error);
@@ -131,7 +130,7 @@ export const useTasks = () => {
     }
   }, [user, isAdmin, isTeacher, isStudent, roleLoading]);
 
-  // Set up real-time subscription with proper cleanup
+  // Set up real-time subscription only if user exists
   useEffect(() => {
     if (!user) return;
 
