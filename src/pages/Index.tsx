@@ -75,7 +75,7 @@ const Index = () => {
 
   const transformedTasks = tasks.map(task => {
     console.log('Transforming task:', task);
-    const subjectName = task.subject?.name || 'Unassigned';
+    const subjectName = task.subject?.name || '';
     console.log('Subject name for task:', subjectName);
     
     return {
@@ -91,10 +91,6 @@ const Index = () => {
   });
 
   console.log('Transformed tasks:', transformedTasks);
-
-  // Add "Unassigned" to subjects if there are tasks without subjects
-  const hasUnassignedTasks = transformedTasks.some(task => task.subject === 'Unassigned');
-  const allSubjects = hasUnassignedTasks ? [...subjectNames, 'Unassigned'] : subjectNames;
 
   const getTasksForStudent = (studentId: string) => {
     return transformedTasks.filter(task => task.studentId === studentId);
@@ -116,7 +112,7 @@ const Index = () => {
       <SummaryHeader tasks={transformedTasks} />
       <FleetBoard 
         students={transformedStudents}
-        subjects={allSubjects}
+        subjects={subjectNames}
         tasks={transformedTasks}
         onUpdateTaskStatus={handleUpdateTaskStatus}
         getTasksForStudent={getTasksForStudent}
