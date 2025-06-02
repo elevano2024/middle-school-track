@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
 import AddContent from "./pages/AddContent";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
                       <Route path="/" element={<Index />} />
                       <Route path="/users" element={<UserManagement />} />
                       <Route path="/add-content" element={<AddContent />} />
+                      <Route path="/settings" element={<Settings />} />
                     </Routes>
                   </ProtectedLayout>
                 </div>

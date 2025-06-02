@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Users, LogOut, Plus } from 'lucide-react';
+import { Home, Users, LogOut, Plus, Settings } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -20,7 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 
 const items = [
-  { title: 'Home', url: '/', icon: Home },
+  { title: 'Dashboard', url: '/', icon: Home },
+  { title: 'Settings', url: '/settings', icon: Settings, teacherOnly: true },
   { title: 'Add Content', url: '/add-content', icon: Plus, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
@@ -52,7 +53,10 @@ export function AppSidebar() {
     <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">
       <SidebarHeader className="p-4">
         {!isCollapsed && (
-          <h2 className="text-lg font-semibold">Student Tracker</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-blue-700">Montessori Tracker</h2>
+            <p className="text-xs text-gray-500">Learning Journey Manager</p>
+          </div>
         )}
       </SidebarHeader>
 

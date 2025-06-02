@@ -33,7 +33,7 @@ export const AddTaskForm = () => {
     if (!data.student_id || !data.subject_id) {
       toast({
         title: "Error",
-        description: "Please select both a student and a subject.",
+        description: "Please select both a student and a subject area.",
         variant: "destructive",
       });
       return;
@@ -53,24 +53,24 @@ export const AddTaskForm = () => {
         }]);
 
       if (error) {
-        console.error('Error creating task:', error);
+        console.error('Error creating learning activity:', error);
         toast({
           title: "Error",
-          description: "Failed to create task. Please try again.",
+          description: "Failed to create learning activity. Please try again.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Success",
-          description: "Task created successfully!",
+          description: "Learning activity created successfully!",
         });
         reset();
       }
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error creating learning activity:', error);
       toast({
         title: "Error",
-        description: "Failed to create task. Please try again.",
+        description: "Failed to create learning activity. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -81,7 +81,7 @@ export const AddTaskForm = () => {
   if (studentsLoading || subjectsLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <p>Loading students and subjects...</p>
+        <p>Loading students and subject areas...</p>
       </div>
     );
   }
@@ -89,13 +89,13 @@ export const AddTaskForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="title">Task Title</Label>
+        <Label htmlFor="title">Activity Name</Label>
         <Input
           id="title"
-          placeholder="e.g., Complete Chapter 5 worksheet"
+          placeholder="e.g., Pink Tower exploration, Number rods work, Practical life - pouring"
           {...register('title', { 
-            required: 'Task title is required',
-            minLength: { value: 3, message: 'Task title must be at least 3 characters' }
+            required: 'Activity name is required',
+            minLength: { value: 3, message: 'Activity name must be at least 3 characters' }
           })}
         />
         {errors.title && (
@@ -104,10 +104,10 @@ export const AddTaskForm = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Task Description (Optional)</Label>
+        <Label htmlFor="description">Learning Objectives & Notes (Optional)</Label>
         <Textarea
           id="description"
-          placeholder="Additional details about the task..."
+          placeholder="Describe the learning goals, materials needed, or specific observations to make..."
           rows={3}
           {...register('description')}
         />
@@ -115,10 +115,10 @@ export const AddTaskForm = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Student</Label>
+          <Label>Child</Label>
           <Select onValueChange={(value) => setValue('student_id', value)} value={selectedStudentId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a student" />
+              <SelectValue placeholder="Select a child" />
             </SelectTrigger>
             <SelectContent>
               {students.map((student) => (
@@ -129,15 +129,15 @@ export const AddTaskForm = () => {
             </SelectContent>
           </Select>
           {errors.student_id && (
-            <p className="text-sm text-red-600">Please select a student</p>
+            <p className="text-sm text-red-600">Please select a child</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label>Subject</Label>
+          <Label>Subject Area</Label>
           <Select onValueChange={(value) => setValue('subject_id', value)} value={selectedSubjectId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a subject" />
+              <SelectValue placeholder="Select a subject area" />
             </SelectTrigger>
             <SelectContent>
               {subjects.map((subject) => (
@@ -154,13 +154,13 @@ export const AddTaskForm = () => {
             </SelectContent>
           </Select>
           {errors.subject_id && (
-            <p className="text-sm text-red-600">Please select a subject</p>
+            <p className="text-sm text-red-600">Please select a subject area</p>
           )}
         </div>
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Creating...' : 'Create Task'}
+        {isSubmitting ? 'Creating...' : 'Create Learning Activity'}
       </Button>
     </form>
   );
