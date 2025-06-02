@@ -40,80 +40,105 @@ export const useTasks = () => {
     }
 
     try {
-      console.log('Fetching tasks for user:', user.id, 'with roles:', { isAdmin, isTeacher, isStudent });
+      console.log('=== COMPREHENSIVE DEBUGGING ===');
+      console.log('User ID:', user.id);
+      console.log('User roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
       
-      // First, let's try a simple query without joins to see if we can get the basic tasks
-      let simpleQuery = supabase
+      // Step 1: Check if there are ANY tasks in the database
+      console.log('Step 1: Checking all tasks in database...');
+      const { data: allTasks, error: allTasksError } = await supabase
         .from('tasks')
         .select('*');
-
-      // If user is a student, filter by their user ID
-      if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Fetching tasks for student with user ID:', user.id);
-        simpleQuery = simpleQuery.eq('student_id', user.id);
-      }
-
-      console.log('Executing simple tasks query without joins...');
-      const { data: simpleTasks, error: simpleError } = await simpleQuery.order('created_at', { ascending: false });
-
-      if (simpleError) {
-        console.error('Error fetching simple tasks:', simpleError);
-        setError(`Error fetching tasks: ${simpleError.message}`);
-        setTasks([]);
-        return;
-      }
-
-      console.log('Simple tasks query result:', simpleTasks);
-      console.log('Number of simple tasks fetched:', simpleTasks?.length || 0);
-
-      if (!simpleTasks || simpleTasks.length === 0) {
-        console.log('No tasks found with simple query. This means there is a real data issue.');
-        // Let's also check what the exact student_id values look like in the database
-        const { data: debugTasks, error: debugError } = await supabase
-          .from('tasks')
-          .select('id, student_id, title')
-          .limit(5);
-        
-        console.log('Debug - All tasks in database (first 5):', debugTasks);
-        console.log('Debug - Looking for student_id exactly matching:', user.id);
-        console.log('Debug - User ID type:', typeof user.id);
-        
-        if (debugTasks && debugTasks.length > 0) {
-          debugTasks.forEach(task => {
-            console.log(`Task ${task.id}: student_id="${task.student_id}" (type: ${typeof task.student_id}), matches user: ${task.student_id === user.id}`);
-          });
-        }
-        
-        setTasks([]);
-        return;
-      }
-
-      // Now try to enrich with student and subject data
-      console.log('Enriching tasks with student and subject data...');
       
-      const { data: enrichedTasks, error: enrichError } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          students(name, email),
-          subjects(name)
-        `)
-        .in('id', simpleTasks.map(t => t.id))
-        .order('created_at', { ascending: false });
+      console.log('All tasks query result:', allTasks);
+      console.log('All tasks query error:', allTasksError);
+      console.log('Total tasks in database:', allTasks?.length || 0);
+      
+      if (allTasks && allTasks.length > 0) {
+        console.log('Sample task data:', allTasks[0]);
+        allTasks.forEach((task, index) => {
+          console.log(`Task ${index + 1}: id=${task.id}, student_id="${task.student_id}", title="${task.title}"`);
+        });
+      }
 
-      if (enrichError) {
-        console.error('Error enriching tasks:', enrichError);
-        // Use simple tasks if enrichment fails
-        console.log('Using simple tasks without enrichment due to error');
-        setTasks(simpleTasks as Task[]);
+      // Step 2: Check students table
+      console.log('Step 2: Checking students table...');
+      const { data: allStudents, error: studentsError } = await supabase
+        .from('students')
+        .select('*');
+      
+      console.log('All students:', allStudents);
+      console.log('Students error:', studentsError);
+      
+      if (allStudents && allStudents.length > 0) {
+        allStudents.forEach((student, index) => {
+          console.log(`Student ${index + 1}: id="${student.id}", name="${student.name}", email="${student.email}"`);
+        });
+      }
+
+      // Step 3: Check if current user exists in students table
+      console.log('Step 3: Checking if current user exists in students table...');
+      const { data: currentUserAsStudent, error: currentUserError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      console.log('Current user in students table:', currentUserAsStudent);
+      console.log('Current user query error:', currentUserError);
+
+      // Step 4: Check user_roles table
+      console.log('Step 4: Checking user_roles table...');
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      console.log('User roles in database:', userRoles);
+      console.log('User roles error:', rolesError);
+
+      // Step 5: If there are no tasks, let's see what we can create
+      if (!allTasks || allTasks.length === 0) {
+        console.log('No tasks found in database. This might be expected if this is a fresh installation.');
+        setTasks([]);
+        return;
+      }
+
+      // Step 6: Filter tasks for current user if they are a student
+      let filteredTasks = allTasks;
+      if (isStudent && !isAdmin && !isTeacher) {
+        console.log('Filtering tasks for student with ID:', user.id);
+        filteredTasks = allTasks.filter(task => task.student_id === user.id);
+        console.log('Filtered tasks for student:', filteredTasks);
+      }
+
+      // Step 7: Try to enrich with student and subject data
+      if (filteredTasks.length > 0) {
+        console.log('Step 7: Enriching tasks with related data...');
+        const { data: enrichedTasks, error: enrichError } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            students(name, email),
+            subjects(name)
+          `)
+          .in('id', filteredTasks.map(t => t.id))
+          .order('created_at', { ascending: false });
+
+        if (enrichError) {
+          console.error('Error enriching tasks:', enrichError);
+          setTasks(filteredTasks as Task[]);
+        } else {
+          console.log('Successfully enriched tasks:', enrichedTasks);
+          setTasks(enrichedTasks || []);
+        }
       } else {
-        console.log('Successfully enriched tasks:', enrichedTasks);
-        setTasks(enrichedTasks || []);
+        setTasks([]);
       }
 
     } catch (error) {
-      console.error('Error fetching tasks:', error);
+      console.error('Error in fetchTasks:', error);
       setError('Failed to fetch tasks');
       setTasks([]);
     } finally {
