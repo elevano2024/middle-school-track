@@ -1,15 +1,22 @@
+
 import React, { useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
 import TaskCard from './TaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { setupStudentTestData } from '@/utils/setupTestData';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
+
+  // Add debugging to see what's happening
+  useEffect(() => {
+    console.log('StudentDashboard - Current user:', user);
+    console.log('StudentDashboard - Tasks loaded:', tasks);
+    console.log('StudentDashboard - Tasks loading:', tasksLoading);
+  }, [user, tasks, tasksLoading]);
 
   if (tasksLoading || subjectsLoading) {
     return (
@@ -110,8 +117,8 @@ const StudentDashboard = () => {
           <h3 className="font-semibold mb-2">Debug Info:</h3>
           <p className="text-sm">Student tasks found: {studentTasks.length}</p>
           <p className="text-sm">User email: {user?.email}</p>
-          <p className="text-sm">Tasks fetched using email-based lookup: {studentTasks.length > 0 ? 'Yes' : 'No'}</p>
-          <p className="text-sm">System now uses email as unique identifier for data fetching</p>
+          <p className="text-sm">Raw tasks data: {JSON.stringify(tasks, null, 2)}</p>
+          <p className="text-sm">Query should filter by students.email = {user?.email}</p>
         </CardContent>
       </Card>
 
@@ -121,10 +128,11 @@ const StudentDashboard = () => {
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>
             <p className="text-sm text-gray-400 mt-2">
-              If you should have tasks, try refreshing the page or contact your teacher.
+              If you should have tasks, the issue might be that the students table doesn't have an email column 
+              or the email doesn't match exactly.
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              The system is now using your email ({user?.email}) to fetch your specific tasks.
+              Looking for tasks where students.email = {user?.email}
             </p>
           </CardContent>
         </Card>
