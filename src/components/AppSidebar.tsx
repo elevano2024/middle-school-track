@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Users, LogOut } from 'lucide-react';
+import { Home, Users, LogOut, Plus } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 
 const items = [
   { title: 'Home', url: '/', icon: Home },
+  { title: 'Add Content', url: '/add-content', icon: Plus, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 
@@ -41,9 +42,11 @@ export function AppSidebar() {
     await signOut();
   };
 
-  const filteredItems = items.filter(item => 
-    !item.adminOnly || canAccessUsers
-  );
+  const filteredItems = items.filter(item => {
+    if (item.adminOnly && !canAccessUsers) return false;
+    if (item.teacherOnly && !isTeacher && !isAdmin) return false;
+    return true;
+  });
 
   return (
     <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">

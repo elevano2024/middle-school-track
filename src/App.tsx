@@ -10,6 +10,7 @@ import ProtectedLayout from "@/components/ProtectedLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import UserManagement from "./pages/UserManagement";
+import AddContent from "./pages/AddContent";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/users" element={<UserManagement />} />
+                      <Route path="/add-content" element={<AddContent />} />
                     </Routes>
                   </ProtectedLayout>
                 </div>
