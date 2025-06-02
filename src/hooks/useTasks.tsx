@@ -80,18 +80,21 @@ export const useTasks = () => {
 
     // Clean up existing channel if it exists
     if (channelRef.current) {
+      console.log('Removing existing channel before creating new one');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
 
-    // Create new channel
+    // Create new channel with a unique name to avoid conflicts
+    const channelName = `tasks-changes-${user.id}-${Date.now()}`;
+    console.log('Creating new channel:', channelName);
+    
     channelRef.current = supabase
-      .channel('tasks-changes')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
         console.log('Tasks data changed via real-time:', payload);
         
         // Only refetch if this wasn't an update we initiated
-        // Safely access the id property with proper type checking
         const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
         if (taskId && !updatingTasksRef.current.has(taskId)) {
           console.log('Refetching tasks due to external change');
@@ -100,15 +103,18 @@ export const useTasks = () => {
           console.log('Skipping refetch for self-initiated update');
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Channel subscription status:', status);
+      });
 
     return () => {
       if (channelRef.current) {
+        console.log('Cleaning up channel on unmount');
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [user, isAdmin, isTeacher, isStudent]);
+  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     // Prevent duplicate updates

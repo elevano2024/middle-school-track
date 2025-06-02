@@ -1,15 +1,24 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
 import TaskCard from './TaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { setupStudentTestData } from '@/utils/setupTestData';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
+
+  // Set up test data on component mount for development
+  useEffect(() => {
+    if (user && user.email === 'ravigillsingh12@gmail.com') {
+      console.log('Setting up test data for student user');
+      setupStudentTestData();
+    }
+  }, [user]);
 
   if (tasksLoading || subjectsLoading) {
     return (
@@ -23,8 +32,17 @@ const StudentDashboard = () => {
     );
   }
 
+  console.log('Current user:', user?.email);
+  console.log('All tasks fetched:', tasks);
+  console.log('User ID:', user?.id);
+
   // Filter tasks to only show the current student's tasks
-  const studentTasks = tasks.filter(task => task.student_id === user?.id);
+  const studentTasks = tasks.filter(task => {
+    console.log('Comparing task student_id:', task.student_id, 'with user ID:', user?.id);
+    return task.student_id === user?.id;
+  });
+
+  console.log('Filtered student tasks:', studentTasks);
 
   // Group tasks by subject
   const tasksBySubject = studentTasks.reduce((acc, task) => {
@@ -68,6 +86,7 @@ const StudentDashboard = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
         <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
+        <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
       </div>
 
       {/* Status Summary */}
@@ -98,11 +117,24 @@ const StudentDashboard = () => {
         </Card>
       </div>
 
+      {/* Debug Information */}
+      <Card className="bg-gray-50">
+        <CardContent className="p-4">
+          <h3 className="font-semibold mb-2">Debug Info:</h3>
+          <p className="text-sm">Total tasks found: {tasks.length}</p>
+          <p className="text-sm">Student tasks: {studentTasks.length}</p>
+          <p className="text-sm">User ID: {user?.id}</p>
+        </CardContent>
+      </Card>
+
       {/* Tasks by Subject */}
       {Object.keys(tasksBySubject).length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>
+            <p className="text-sm text-gray-400 mt-2">
+              If you should have tasks, try refreshing the page or contact your teacher.
+            </p>
           </CardContent>
         </Card>
       ) : (
