@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -72,7 +74,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      console.log('Attempting to sign out...');
+      
+      // Clear local state immediately to prevent UI issues
+      setUser(null);
+      setSession(null);
+      
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.warn('Supabase signOut error (non-critical):', error);
+        // Don't throw the error - the local state is already cleared
+        // This handles cases where the session is already expired
+      } else {
+        console.log('Successfully signed out from Supabase');
+      }
+    } catch (error) {
+      console.warn('SignOut error (non-critical):', error);
+      // Even if there's an error, we've cleared the local state
+      // so the user appears logged out in the UI
+    }
   };
 
   const value = {
