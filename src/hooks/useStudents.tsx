@@ -18,33 +18,50 @@ export const useStudents = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
 
-  useEffect(() => {
-    const fetchStudents = async () => {
-      if (!user || (!isAdmin && !isTeacher)) {
-        setLoading(false);
-        return;
-      }
+  const fetchStudents = async () => {
+    if (!user || (!isAdmin && !isTeacher)) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from('students')
-          .select('*')
-          .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('name');
 
-        if (error) {
-          console.error('Error fetching students:', error);
-        } else {
-          setStudents(data || []);
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching students:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        setStudents(data || []);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchStudents();
   }, [user, isAdmin, isTeacher]);
 
-  return { students, loading };
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user || (!isAdmin && !isTeacher)) return;
+
+    const channel = supabase
+      .channel('students-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        console.log('Students data changed, refetching...');
+        fetchStudents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isAdmin, isTeacher]);
+
+  return { students, loading, refetch: fetchStudents };
 };

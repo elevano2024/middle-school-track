@@ -7,10 +7,14 @@ import { Navigate } from 'react-router-dom';
 import { AddSubjectForm } from '@/components/AddSubjectForm';
 import { AddTaskForm } from '@/components/AddTaskForm';
 import { BookOpen, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useTasks } from '@/hooks/useTasks';
 
 const Settings = () => {
   const { isTeacher, isAdmin, loading } = useUserRole();
   const [activeTab, setActiveTab] = useState('subjects');
+  const { refetch: refetchSubjects } = useSubjects();
+  const { refetch: refetchTasks } = useTasks();
 
   if (loading) {
     return (
@@ -26,6 +30,14 @@ const Settings = () => {
   if (!isTeacher && !isAdmin) {
     return <Navigate to="/" replace />;
   }
+
+  const handleSubjectCreated = () => {
+    refetchSubjects();
+  };
+
+  const handleTaskCreated = () => {
+    refetchTasks();
+  };
 
   return (
     <div className="container mx-auto py-6 max-w-4xl">
@@ -58,7 +70,7 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AddSubjectForm />
+              <AddSubjectForm onSubjectCreated={handleSubjectCreated} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -72,7 +84,7 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AddTaskForm />
+              <AddTaskForm onTaskCreated={handleTaskCreated} />
             </CardContent>
           </Card>
         </TabsContent>

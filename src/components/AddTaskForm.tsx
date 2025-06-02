@@ -18,7 +18,11 @@ interface TaskFormData {
   subject_id: string;
 }
 
-export const AddTaskForm = () => {
+interface AddTaskFormProps {
+  onTaskCreated?: () => void;
+}
+
+export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { students, loading: studentsLoading } = useStudents();
@@ -65,6 +69,7 @@ export const AddTaskForm = () => {
           description: "Learning activity created successfully!",
         });
         reset();
+        onTaskCreated?.();
       }
     } catch (error) {
       console.error('Error creating learning activity:', error);

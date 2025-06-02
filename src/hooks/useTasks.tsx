@@ -29,40 +29,60 @@ export const useTasks = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!user || (!isAdmin && !isTeacher)) {
-        setLoading(false);
-        return;
-      }
+  const fetchTasks = async () => {
+    if (!user || (!isAdmin && !isTeacher)) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .select(`
-            *,
-            students(name),
-            subjects(name)
-          `)
-          .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          students(name),
+          subjects(name)
+        `)
+        .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching tasks:', error);
-        } else {
-          setTasks(data || []);
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching tasks:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        console.log('Fetched tasks:', data);
+        setTasks(data || []);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTasks();
+  }, [user, isAdmin, isTeacher]);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user || (!isAdmin && !isTeacher)) return;
+
+    const channel = supabase
+      .channel('tasks-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        console.log('Tasks data changed, refetching...');
+        fetchTasks();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, isAdmin, isTeacher]);
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     try {
+      console.log(`Updating task ${taskId} status to ${newStatus}`);
+      
       const { error } = await supabase
         .from('tasks')
         .update({ 
@@ -77,15 +97,9 @@ export const useTasks = () => {
         return false;
       }
 
-      // Update local state
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, status: newStatus, time_in_status: 0 }
-            : task
-        )
-      );
+      console.log(`Successfully updated task ${taskId} status to ${newStatus}`);
       
+      // The real-time subscription will automatically refresh the data
       return true;
     } catch (error) {
       console.error('Error updating task status:', error);
@@ -93,5 +107,5 @@ export const useTasks = () => {
     }
   };
 
-  return { tasks, loading, updateTaskStatus };
+  return { tasks, loading, updateTaskStatus, refetch: fetchTasks };
 };

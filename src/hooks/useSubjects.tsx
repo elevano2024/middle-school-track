@@ -16,33 +16,50 @@ export const useSubjects = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      if (!user || (!isAdmin && !isTeacher)) {
-        setLoading(false);
-        return;
-      }
+  const fetchSubjects = async () => {
+    if (!user || (!isAdmin && !isTeacher)) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from('subjects')
-          .select('*')
-          .order('name');
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('name');
 
-        if (error) {
-          console.error('Error fetching subjects:', error);
-        } else {
-          setSubjects(data || []);
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching subjects:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        setSubjects(data || []);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSubjects();
   }, [user, isAdmin, isTeacher]);
 
-  return { subjects, loading };
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user || (!isAdmin && !isTeacher)) return;
+
+    const channel = supabase
+      .channel('subjects-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, () => {
+        console.log('Subjects data changed, refetching...');
+        fetchSubjects();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isAdmin, isTeacher]);
+
+  return { subjects, loading, refetch: fetchSubjects };
 };

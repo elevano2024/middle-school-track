@@ -11,7 +11,11 @@ interface SubjectFormData {
   name: string;
 }
 
-export const AddSubjectForm = () => {
+interface AddSubjectFormProps {
+  onSubjectCreated?: () => void;
+}
+
+export const AddSubjectForm = ({ onSubjectCreated }: AddSubjectFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SubjectFormData>();
@@ -39,6 +43,7 @@ export const AddSubjectForm = () => {
           description: "Subject created successfully!",
         });
         reset();
+        onSubjectCreated?.();
       }
     } catch (error) {
       console.error('Error creating subject:', error);
