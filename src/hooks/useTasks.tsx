@@ -47,26 +47,10 @@ export const useTasks = () => {
           subjects(name)
         `);
 
-      // If user is a student, only fetch their own tasks using their email
+      // If user is a student, filter by their user ID directly as student_id
       if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Fetching tasks for student with email:', user.email);
-        
-        // First get the student ID by email
-        const { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (studentError || !studentData) {
-          console.log('No student record found for email:', user.email);
-          setTasks([]);
-          setLoading(false);
-          return;
-        }
-
-        console.log('Found student record with ID:', studentData.id);
-        query = query.eq('student_id', studentData.id);
+        console.log('Fetching tasks for student with user ID:', user.id);
+        query = query.eq('student_id', user.id);
       }
 
       query = query.order('created_at', { ascending: false });
