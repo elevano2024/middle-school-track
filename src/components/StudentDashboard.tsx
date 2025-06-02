@@ -16,6 +16,17 @@ const StudentDashboard = () => {
     console.log('StudentDashboard - Current user:', user);
     console.log('StudentDashboard - Tasks loaded:', tasks);
     console.log('StudentDashboard - Tasks loading:', tasksLoading);
+    
+    // Debug each task's subject data
+    tasks.forEach((task, index) => {
+      console.log(`Task ${index}:`, {
+        id: task.id,
+        title: task.title,
+        subject_id: task.subject_id,
+        subjects: task.subjects,
+        subjectName: task.subjects?.name
+      });
+    });
   }, [user, tasks, tasksLoading]);
 
   if (tasksLoading) {
@@ -82,6 +93,14 @@ const StudentDashboard = () => {
   const tasksBySubject = tasks.reduce((acc, task) => {
     const subjectName = task.subjects?.name || 'Unknown Subject';
     const subjectId = task.subject_id;
+    
+    console.log('Processing task for grouping:', {
+      taskId: task.id,
+      taskTitle: task.title,
+      subjectId,
+      subjectName,
+      rawSubjects: task.subjects
+    });
     
     if (!acc[subjectId]) {
       acc[subjectId] = {
