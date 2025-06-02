@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -7,11 +6,12 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
+import StudentDashboard from '../components/StudentDashboard';
 import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   const { user } = useAuth();
-  const { isAdmin, isTeacher, loading: roleLoading } = useUserRole();
+  const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
@@ -40,6 +40,12 @@ const Index = () => {
     );
   }
 
+  // Show student dashboard for students
+  if (isStudent) {
+    return <StudentDashboard />;
+  }
+
+  // Show fleet board for teachers and admins
   if (!isAdmin && !isTeacher) {
     return (
       <div className="p-6">
