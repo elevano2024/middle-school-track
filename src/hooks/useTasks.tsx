@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,12 +58,15 @@ export const useTasks = () => {
       }
 
       console.log('Fetched subjects:', subjectsData);
+      console.log('Subject IDs in database:', subjectsData?.map(s => s.id));
 
       // Create a lookup map for subjects
       const subjectsMap = (subjectsData || []).reduce((acc, subject) => {
         acc[subject.id] = subject;
         return acc;
       }, {} as Record<string, { id: string; name: string }>);
+
+      console.log('Subjects map keys:', Object.keys(subjectsMap));
 
       // Build the tasks query based on user role
       let query = supabase
@@ -88,6 +92,7 @@ export const useTasks = () => {
       }
 
       console.log('Raw tasks data from database:', tasksData);
+      console.log('Task subject_ids:', tasksData?.map(t => t.subject_id));
 
       if (!tasksData || tasksData.length === 0) {
         console.log('No tasks found');
@@ -95,11 +100,26 @@ export const useTasks = () => {
         return;
       }
 
+      // Check for subject_id mismatches BEFORE mapping
+      const uniqueTaskSubjectIds = [...new Set(tasksData.map(t => t.subject_id))];
+      const availableSubjectIds = Object.keys(subjectsMap);
+      
+      console.log('Unique subject IDs in tasks:', uniqueTaskSubjectIds);
+      console.log('Available subject IDs in subjects table:', availableSubjectIds);
+      
+      const missingSubjectIds = uniqueTaskSubjectIds.filter(id => !availableSubjectIds.includes(id));
+      console.log('Subject IDs that exist in tasks but NOT in subjects table:', missingSubjectIds);
+
       // Manually attach subject data to each task
-      const tasksWithSubjects = tasksData.map(task => ({
-        ...task,
-        subjects: subjectsMap[task.subject_id] ? { name: subjectsMap[task.subject_id].name } : null
-      }));
+      const tasksWithSubjects = tasksData.map(task => {
+        const subjectData = subjectsMap[task.subject_id];
+        console.log(`Task ${task.id} (${task.title}) - subject_id: ${task.subject_id}, found subject:`, subjectData);
+        
+        return {
+          ...task,
+          subjects: subjectData ? { name: subjectData.name } : null
+        };
+      });
 
       console.log('Tasks with manually attached subjects:', tasksWithSubjects);
       
@@ -113,6 +133,7 @@ export const useTasks = () => {
       if (tasksWithoutSubjectNames.length > 0) {
         console.log('Tasks missing subject data:', tasksWithoutSubjectNames.map(t => ({ 
           id: t.id, 
+          title: t.title,
           subject_id: t.subject_id, 
           available_subjects: Object.keys(subjectsMap)
         })));
