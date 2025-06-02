@@ -73,16 +73,28 @@ const Index = () => {
 
   const subjectNames = subjects.map(subject => subject.name);
 
-  const transformedTasks = tasks.map(task => ({
-    id: task.id,
-    title: task.title,
-    description: task.description || '',
-    studentId: task.student_id,
-    subject: task.subject?.name || '',
-    status: task.status,
-    timeInStatus: task.time_in_status || 0,
-    createdAt: task.created_at
-  }));
+  const transformedTasks = tasks.map(task => {
+    console.log('Transforming task:', task);
+    const subjectName = task.subject?.name || 'Unassigned';
+    console.log('Subject name for task:', subjectName);
+    
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description || '',
+      studentId: task.student_id,
+      subject: subjectName,
+      status: task.status,
+      timeInStatus: task.time_in_status || 0,
+      createdAt: task.created_at
+    };
+  });
+
+  console.log('Transformed tasks:', transformedTasks);
+
+  // Add "Unassigned" to subjects if there are tasks without subjects
+  const hasUnassignedTasks = transformedTasks.some(task => task.subject === 'Unassigned');
+  const allSubjects = hasUnassignedTasks ? [...subjectNames, 'Unassigned'] : subjectNames;
 
   const getTasksForStudent = (studentId: string) => {
     return transformedTasks.filter(task => task.studentId === studentId);
@@ -104,7 +116,7 @@ const Index = () => {
       <SummaryHeader tasks={transformedTasks} />
       <FleetBoard 
         students={transformedStudents}
-        subjects={subjectNames}
+        subjects={allSubjects}
         tasks={transformedTasks}
         onUpdateTaskStatus={handleUpdateTaskStatus}
         getTasksForStudent={getTasksForStudent}
