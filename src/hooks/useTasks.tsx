@@ -46,9 +46,9 @@ export const useTasks = () => {
           subjects(name)
         `);
 
-      // If user is a student, only fetch their own tasks
+      // If user is a student, only fetch their own tasks using their auth ID
       if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Fetching tasks for student with user ID:', user.id);
+        console.log('Fetching tasks for student with auth user ID:', user.id);
         query = query.eq('student_id', user.id);
       }
 
