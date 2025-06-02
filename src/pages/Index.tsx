@@ -17,6 +17,13 @@ const Index = () => {
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
 
+  // Add debugging for subjects data
+  React.useEffect(() => {
+    console.log('Index: User roles:', { isAdmin, isTeacher, isStudent });
+    console.log('Index: Subjects data:', subjects);
+    console.log('Index: Subjects loading:', subjectsLoading);
+  }, [isAdmin, isTeacher, isStudent, subjects, subjectsLoading]);
+
   if (!user) {
     return (
       <div className="p-6">
@@ -48,9 +55,9 @@ const Index = () => {
   // 1. User has student role, OR
   // 2. User exists in the students table (even if they're admin/teacher)
   if (isStudent || currentUserAsStudent) {
-    console.log('Showing student dashboard for user:', user.id);
-    console.log('User is student:', isStudent);
-    console.log('User exists in students table:', !!currentUserAsStudent);
+    console.log('Index: Showing student dashboard for user:', user.id);
+    console.log('Index: User is student:', isStudent);
+    console.log('Index: User exists in students table:', !!currentUserAsStudent);
     return <StudentDashboard />;
   }
 
@@ -89,7 +96,7 @@ const Index = () => {
   const subjectNames = subjects.map(subject => subject.name);
 
   const transformedTasks = tasks.map(task => {
-    console.log('Raw task data:', task);
+    console.log('Index: Raw task data:', task);
     
     // The subject data comes from the join and might be nested differently
     // Let's try multiple ways to access it
@@ -103,7 +110,7 @@ const Index = () => {
       subjectName = subject?.name || '';
     }
     
-    console.log('Final subject name for task:', subjectName);
+    console.log('Index: Final subject name for task:', subjectName);
     
     return {
       id: task.id,
@@ -117,19 +124,19 @@ const Index = () => {
     };
   });
 
-  console.log('Final transformed tasks:', transformedTasks);
+  console.log('Index: Final transformed tasks:', transformedTasks);
 
   const getTasksForStudent = (studentId: string) => {
     return transformedTasks.filter(task => task.studentId === studentId);
   };
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
-    console.log(`Attempting to update task ${taskId} to status ${newStatus}`);
+    console.log(`Index: Attempting to update task ${taskId} to status ${newStatus}`);
     const success = await updateTaskStatus(taskId, newStatus);
     if (success) {
-      console.log(`Task ${taskId} status updated to ${newStatus}`);
+      console.log(`Index: Task ${taskId} status updated to ${newStatus}`);
     } else {
-      console.error(`Failed to update task ${taskId} status to ${newStatus}`);
+      console.error(`Index: Failed to update task ${taskId} status to ${newStatus}`);
     }
   };
 
