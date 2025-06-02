@@ -14,15 +14,17 @@ export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { isAdmin, isTeacher } = useUserRole();
+  const { isAdmin, isTeacher, isStudent } = useUserRole();
 
   const fetchSubjects = async () => {
-    if (!user || (!isAdmin && !isTeacher)) {
+    // Allow students to fetch subjects too, not just admins and teachers
+    if (!user || (!isAdmin && !isTeacher && !isStudent)) {
       setLoading(false);
       return;
     }
 
     try {
+      console.log('Fetching subjects for user role:', { isAdmin, isTeacher, isStudent });
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
@@ -31,6 +33,7 @@ export const useSubjects = () => {
       if (error) {
         console.error('Error fetching subjects:', error);
       } else {
+        console.log('Successfully fetched subjects:', data);
         setSubjects(data || []);
       }
     } catch (error) {
@@ -42,11 +45,11 @@ export const useSubjects = () => {
 
   useEffect(() => {
     fetchSubjects();
-  }, [user, isAdmin, isTeacher]);
+  }, [user, isAdmin, isTeacher, isStudent]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription for all authenticated users
   useEffect(() => {
-    if (!user || (!isAdmin && !isTeacher)) return;
+    if (!user || (!isAdmin && !isTeacher && !isStudent)) return;
 
     const channel = supabase
       .channel('subjects-changes')
@@ -59,7 +62,7 @@ export const useSubjects = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, isAdmin, isTeacher]);
+  }, [user, isAdmin, isTeacher, isStudent]);
 
   return { subjects, loading, refetch: fetchSubjects };
 };

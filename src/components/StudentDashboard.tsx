@@ -3,10 +3,10 @@ import React, { useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
-import TaskCard from './TaskCard';
+import SubjectTaskWidget from './SubjectTaskWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, Clock, HelpCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, HelpCircle, BookOpen } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -21,7 +21,9 @@ const StudentDashboard = () => {
     console.log('StudentDashboard - Tasks loaded:', tasks);
     console.log('StudentDashboard - Tasks loading:', tasksLoading);
     console.log('StudentDashboard - Tasks error:', tasksError);
-  }, [user, tasks, tasksLoading, tasksError]);
+    console.log('StudentDashboard - Subjects loaded:', subjects);
+    console.log('StudentDashboard - Subjects loading:', subjectsLoading);
+  }, [user, tasks, tasksLoading, tasksError, subjects, subjectsLoading]);
 
   if (tasksLoading || subjectsLoading) {
     return (
@@ -30,7 +32,7 @@ const StudentDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 animate-spin" />
-              <p>Loading your tasks...</p>
+              <p>Loading your tasks and subjects...</p>
             </div>
           </CardContent>
         </Card>
@@ -55,21 +57,12 @@ const StudentDashboard = () => {
   console.log('Current user ID:', user?.id);
   console.log('Current user email:', user?.email);
   console.log('All tasks fetched for student dashboard:', tasks);
+  console.log('All subjects fetched:', subjects);
 
   // Since useTasks already filters by student ID, we can use tasks directly
   const studentTasks = tasks;
 
   console.log('Student tasks (should be filtered by user ID):', studentTasks);
-
-  // Group tasks by subject
-  const tasksBySubject = studentTasks.reduce((acc, task) => {
-    const subjectName = task.subjects?.name || 'Unknown Subject';
-    if (!acc[subjectName]) {
-      acc[subjectName] = [];
-    }
-    acc[subjectName].push(task);
-    return acc;
-  }, {} as Record<string, typeof tasks>);
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
     console.log(`Student updating task ${taskId} to status ${newStatus}`);
@@ -81,7 +74,7 @@ const StudentDashboard = () => {
     }
   };
 
-  const getStatusCounts = () => {
+  const getGlobalStatusCounts = () => {
     const counts = {
       working: 0,
       'need-help': 0,
@@ -96,7 +89,29 @@ const StudentDashboard = () => {
     return counts;
   };
 
-  const statusCounts = getStatusCounts();
+  const globalStatusCounts = getGlobalStatusCounts();
+
+  // Group tasks by subject, now using the fetched subjects
+  const tasksBySubject: Record<string, typeof tasks> = {};
+  
+  // First, create entries for all subjects (even those without tasks)
+  subjects.forEach(subject => {
+    tasksBySubject[subject.name] = [];
+  });
+  
+  // Then, populate with tasks
+  studentTasks.forEach(task => {
+    // Try to find subject name from subjects array
+    const subject = subjects.find(s => s.id === task.subject_id);
+    const subjectName = subject?.name || 'Unknown Subject';
+    
+    if (!tasksBySubject[subjectName]) {
+      tasksBySubject[subjectName] = [];
+    }
+    tasksBySubject[subjectName].push(task);
+  });
+
+  console.log('Tasks grouped by subject:', tasksBySubject);
 
   return (
     <div className="space-y-6">
@@ -106,40 +121,42 @@ const StudentDashboard = () => {
         <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
       </div>
 
-      {/* Status Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{statusCounts.working}</div>
-            <div className="text-sm text-gray-600">Working</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{statusCounts['need-help']}</div>
-            <div className="text-sm text-gray-600">Need Help</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{statusCounts['ready-review']}</div>
-            <div className="text-sm text-gray-600">Ready for Review</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{statusCounts.completed}</div>
-            <div className="text-sm text-gray-600">Completed</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Global Status Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <BookOpen className="h-5 w-5 mr-2" />
+            Overall Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{globalStatusCounts.working}</div>
+              <div className="text-sm text-gray-600">Working</div>
+            </div>
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="text-2xl font-bold text-red-600">{globalStatusCounts['need-help']}</div>
+              <div className="text-sm text-gray-600">Need Help</div>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600">{globalStatusCounts['ready-review']}</div>
+              <div className="text-sm text-gray-600">Ready for Review</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{globalStatusCounts.completed}</div>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Tasks by Subject */}
+      {/* Subject-based Task Widgets */}
       {Object.keys(tasksBySubject).length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <HelpCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No tasks assigned yet</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No subjects or tasks found</h3>
             <p className="text-gray-500 mb-4">Check back later or contact your teacher if you think you should have tasks assigned.</p>
             
             <div className="bg-gray-50 p-4 rounded-lg text-left">
@@ -148,6 +165,7 @@ const StudentDashboard = () => {
                 <p><strong>User ID:</strong> {user?.id}</p>
                 <p><strong>Email:</strong> {user?.email}</p>
                 <p><strong>Total tasks found:</strong> {studentTasks.length}</p>
+                <p><strong>Total subjects found:</strong> {subjects.length}</p>
                 <p><strong>Looking for tasks with student_id:</strong> {user?.id}</p>
               </div>
             </div>
@@ -159,48 +177,19 @@ const StudentDashboard = () => {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Great! Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} assigned to your account.
+              Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} across {Object.keys(tasksBySubject).length} subject{Object.keys(tasksBySubject).length !== 1 ? 's' : ''}.
             </AlertDescription>
           </Alert>
 
-          {/* Tasks organized by subject */}
+          {/* Subject Widgets */}
           <div className="space-y-6">
             {Object.entries(tasksBySubject).map(([subjectName, subjectTasks]) => (
-              <Card key={subjectName}>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <span className="text-lg font-semibold">{subjectName}</span>
-                    <span className="ml-2 text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                      {subjectTasks.length} task{subjectTasks.length !== 1 ? 's' : ''}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {subjectTasks.map(task => {
-                      // Transform task to match TaskCard interface
-                      const transformedTask = {
-                        id: task.id,
-                        title: task.title,
-                        description: task.description || '',
-                        studentId: task.student_id,
-                        subject: subjectName,
-                        status: task.status,
-                        timeInStatus: task.time_in_status || 0,
-                        createdAt: task.created_at
-                      };
-
-                      return (
-                        <TaskCard
-                          key={task.id}
-                          task={transformedTask}
-                          onUpdateStatus={handleUpdateTaskStatus}
-                        />
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+              <SubjectTaskWidget
+                key={subjectName}
+                subjectName={subjectName}
+                tasks={subjectTasks}
+                onUpdateTaskStatus={handleUpdateTaskStatus}
+              />
             ))}
           </div>
         </>
