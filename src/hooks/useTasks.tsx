@@ -27,6 +27,7 @@ export interface Task {
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const channelRef = useRef<any>(null);
@@ -41,6 +42,7 @@ export const useTasks = () => {
 
     try {
       console.log('Fetching tasks for user:', user.id, 'with roles:', { isAdmin, isTeacher, isStudent });
+      setError(null);
       
       let query = supabase
         .from('tasks')
@@ -50,7 +52,7 @@ export const useTasks = () => {
           subjects(name)
         `);
 
-      // If user is a student, filter by their user ID directly as student_id
+      // If user is a student, filter by their user ID
       if (isStudent && !isAdmin && !isTeacher) {
         console.log('Fetching tasks for student with user ID:', user.id);
         query = query.eq('student_id', user.id);
@@ -58,24 +60,37 @@ export const useTasks = () => {
 
       query = query.order('created_at', { ascending: false });
 
-      console.log('About to execute query...');
+      console.log('Executing tasks query...');
       const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching tasks:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
+        setError(`Error fetching tasks: ${error.message}`);
+        setTasks([]);
       } else {
         console.log('Successfully fetched tasks:', data);
         console.log('Number of tasks fetched:', data?.length || 0);
+        
+        // Debug: Let's also check what tasks exist for debugging
+        if (isStudent && (!data || data.length === 0)) {
+          console.log('No tasks found for student. Checking database...');
+          const { data: debugTasks, error: debugError } = await supabase
+            .from('tasks')
+            .select('id, student_id, title, status')
+            .limit(5);
+          
+          if (!debugError && debugTasks) {
+            console.log('Sample tasks in database:', debugTasks);
+            console.log('Current user ID to match:', user.id);
+          }
+        }
+        
         setTasks(data || []);
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      setError('Failed to fetch tasks');
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -87,6 +102,8 @@ export const useTasks = () => {
     // Fetch tasks if we have a user and roles have finished loading
     if (user && !roleLoading) {
       fetchTasks();
+    } else if (!user) {
+      setLoading(false);
     }
   }, [user, isAdmin, isTeacher, isStudent, roleLoading]);
 
@@ -183,5 +200,5 @@ export const useTasks = () => {
     }
   };
 
-  return { tasks, loading, updateTaskStatus, refetch: fetchTasks };
+  return { tasks, loading, error, updateTaskStatus, refetch: fetchTasks };
 };
