@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -28,7 +29,7 @@ const Index = () => {
     );
   }
 
-  if (roleLoading) {
+  if (roleLoading || studentsLoading) {
     return (
       <div className="p-6">
         <Card>
@@ -40,12 +41,20 @@ const Index = () => {
     );
   }
 
-  // Show student dashboard for students
-  if (isStudent) {
+  // Check if the current user exists in the students table
+  const currentUserAsStudent = students.find(student => student.id === user.id);
+  
+  // Show student dashboard if:
+  // 1. User has student role, OR
+  // 2. User exists in the students table (even if they're admin/teacher)
+  if (isStudent || currentUserAsStudent) {
+    console.log('Showing student dashboard for user:', user.id);
+    console.log('User is student:', isStudent);
+    console.log('User exists in students table:', !!currentUserAsStudent);
     return <StudentDashboard />;
   }
 
-  // Show fleet board for teachers and admins
+  // Show fleet board for teachers and admins who are not students
   if (!isAdmin && !isTeacher) {
     return (
       <div className="p-6">
@@ -58,7 +67,7 @@ const Index = () => {
     );
   }
 
-  if (studentsLoading || subjectsLoading || tasksLoading) {
+  if (subjectsLoading || tasksLoading) {
     return (
       <div className="p-6">
         <Card>
