@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -26,6 +25,10 @@ const UserManagement = () => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student' | ''>('');
   const [resetPasswordEmail, setResetPasswordEmail] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserFullName, setNewUserFullName] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   useEffect(() => {
     fetchProfiles();
@@ -126,6 +129,47 @@ const UserManagement = () => {
     }
   };
 
+  const createNewUser = async () => {
+    if (!newUserEmail || !newUserPassword || !newUserFullName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (newUserPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    setCreatingUser(true);
+
+    try {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: newUserEmail,
+        password: newUserPassword,
+        user_metadata: {
+          full_name: newUserFullName
+        },
+        email_confirm: true
+      });
+
+      if (error) {
+        console.error('Error creating user:', error);
+        toast.error(`Failed to create user: ${error.message}`);
+      } else {
+        toast.success('User created successfully');
+        setNewUserEmail('');
+        setNewUserPassword('');
+        setNewUserFullName('');
+        fetchProfiles();
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error('Failed to create user');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   if (!isAdmin && !isTeacher) {
     return (
       <div className="p-6">
@@ -158,6 +202,52 @@ const UserManagement = () => {
 
       {isAdmin && (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New User</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Input
+                    type="text"
+                    placeholder="Full Name"
+                    value={newUserFullName}
+                    onChange={(e) => setNewUserFullName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email Address"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Password (min 6 chars)"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={createNewUser} 
+                    className="w-full"
+                    disabled={creatingUser}
+                  >
+                    {creatingUser ? 'Creating...' : 'Create User'}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Create a new user account with email and password. The user will be able to log in immediately.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Assign Role</CardTitle>
