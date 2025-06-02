@@ -75,7 +75,8 @@ const Index = () => {
 
   const transformedTasks = tasks.map(task => {
     console.log('Transforming task:', task);
-    const subjectName = task.subject?.name || '';
+    // Fix: access subjects (plural) instead of subject (singular)
+    const subjectName = task.subjects?.name || '';
     console.log('Subject name for task:', subjectName);
     
     return {
