@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Task, TaskStatus } from '../types/workflow';
-import { Clock } from 'lucide-react';
+import { Clock, CircleDot } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -52,6 +52,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     try {
       await onUpdateStatus(task.id, newStatus);
       console.log(`Task "${task.title}" status changed to ${newStatus}`);
+      // Automatically collapse the card after status change
+      setIsExpanded(false);
     } catch (error) {
       console.error('Error updating task status:', error);
     } finally {
@@ -63,23 +65,35 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     return ['working', 'need-help', 'ready-review', 'completed'];
   };
 
+  const handleIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <div className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${statusConfig.color} ${isUpdating ? 'opacity-50' : ''}`}>
-      <div onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="flex items-start justify-between mb-2">
-          <h4 className="text-sm font-semibold line-clamp-2">{task.title}</h4>
-          <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 ml-2 mt-1`}></div>
+    <div className={`border rounded-lg p-3 transition-all hover:shadow-md ${statusConfig.color} ${isUpdating ? 'opacity-50' : ''}`}>
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-semibold line-clamp-2 flex-1">{task.title}</h4>
+        <div className="flex items-center ml-2">
+          <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1`}></div>
+          <button
+            onClick={handleIconClick}
+            className="p-1 hover:bg-white/50 rounded-full transition-colors"
+            disabled={isUpdating}
+          >
+            <CircleDot className="w-4 h-4 text-gray-600" />
+          </button>
         </div>
-        
-        <div className="text-xs font-medium mb-2">{statusConfig.label}</div>
-        
-        {task.timeInStatus > 0 && (
-          <div className="flex items-center text-xs text-gray-600 mb-2">
-            <Clock className="w-3 h-3 mr-1" />
-            {task.timeInStatus}m
-          </div>
-        )}
       </div>
+      
+      <div className="text-xs font-medium mb-2">{statusConfig.label}</div>
+      
+      {task.timeInStatus > 0 && (
+        <div className="flex items-center text-xs text-gray-600 mb-2">
+          <Clock className="w-3 h-3 mr-1" />
+          {task.timeInStatus}m
+        </div>
+      )}
 
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-gray-200">
