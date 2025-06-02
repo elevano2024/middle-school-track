@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -15,6 +15,7 @@ export const useSubjects = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent } = useUserRole();
+  const channelRef = useRef<any>(null);
 
   const fetchSubjects = async () => {
     // Allow students to fetch subjects too, not just admins and teachers
@@ -51,16 +52,29 @@ export const useSubjects = () => {
   useEffect(() => {
     if (!user || (!isAdmin && !isTeacher && !isStudent)) return;
 
+    // Clean up existing channel if it exists
+    if (channelRef.current) {
+      console.log('Removing existing subjects channel');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channelName = `subjects-changes-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel('subjects-changes')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, () => {
         console.log('Subjects data changed, refetching...');
         fetchSubjects();
       })
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user, isAdmin, isTeacher, isStudent]);
 
