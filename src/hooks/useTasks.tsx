@@ -82,6 +82,7 @@ export const useTasks = () => {
           
           // Get all unique subject IDs
           const subjectIds = [...new Set(tasksData.map(task => task.subject_id))];
+          console.log('Subject IDs to fetch:', subjectIds);
           
           // Fetch subjects separately
           const { data: subjectsData, error: subjectsError } = await supabase
@@ -137,7 +138,11 @@ export const useTasks = () => {
     // Clean up existing channel if it exists
     if (channelRef.current) {
       console.log('Removing existing channel before creating new one');
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.log('Error removing channel:', error);
+      }
       channelRef.current = null;
     }
 
@@ -168,7 +173,11 @@ export const useTasks = () => {
     return () => {
       if (channelRef.current) {
         console.log('Cleaning up channel on unmount');
-        supabase.removeChannel(channelRef.current);
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.log('Error cleaning up channel:', error);
+        }
         channelRef.current = null;
       }
     };
