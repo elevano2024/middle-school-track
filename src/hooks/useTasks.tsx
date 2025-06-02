@@ -27,30 +27,40 @@ export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { isAdmin, isTeacher } = useUserRole();
+  const { isAdmin, isTeacher, isStudent } = useUserRole();
   const channelRef = useRef<any>(null);
   const updatingTasksRef = useRef<Set<string>>(new Set());
 
   const fetchTasks = async () => {
-    if (!user || (!isAdmin && !isTeacher)) {
+    if (!user) {
       setLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tasks')
         .select(`
           *,
           students(name),
           subjects(name)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // If user is a student, only fetch their own tasks
+      if (isStudent && !isAdmin && !isTeacher) {
+        console.log('Fetching tasks for student with user ID:', user.id);
+        query = query.eq('student_id', user.id);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching tasks:', error);
       } else {
         console.log('Raw fetched tasks from Supabase:', data);
+        console.log('User role - isStudent:', isStudent, 'isAdmin:', isAdmin, 'isTeacher:', isTeacher);
         setTasks(data || []);
       }
     } catch (error) {
@@ -62,11 +72,11 @@ export const useTasks = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [user, isAdmin, isTeacher]);
+  }, [user, isAdmin, isTeacher, isStudent]);
 
   // Set up real-time subscription with proper cleanup
   useEffect(() => {
-    if (!user || (!isAdmin && !isTeacher)) return;
+    if (!user) return;
 
     // Clean up existing channel if it exists
     if (channelRef.current) {
@@ -98,7 +108,7 @@ export const useTasks = () => {
         channelRef.current = null;
       }
     };
-  }, [user, isAdmin, isTeacher]);
+  }, [user, isAdmin, isTeacher, isStudent]);
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     // Prevent duplicate updates
