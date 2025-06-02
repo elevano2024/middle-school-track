@@ -143,13 +143,24 @@ const UserManagement = () => {
     setCreatingUser(true);
 
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        user_metadata: {
-          full_name: newUserFullName
+      // Get the current session to pass the auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('You must be logged in to create users');
+        return;
+      }
+
+      // Call the Edge Function instead of using admin API directly
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUserEmail,
+          password: newUserPassword,
+          fullName: newUserFullName
         },
-        email_confirm: true
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) {
