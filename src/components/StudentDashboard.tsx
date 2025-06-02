@@ -16,14 +16,11 @@ const StudentDashboard = () => {
   // Add debugging to see what's happening
   useEffect(() => {
     console.log('StudentDashboard - Current user:', user);
-    console.log('StudentDashboard - User ID:', user?.id);
-    console.log('StudentDashboard - User email:', user?.email);
     console.log('StudentDashboard - Tasks loaded:', tasks);
     console.log('StudentDashboard - Tasks loading:', tasksLoading);
-    console.log('StudentDashboard - Tasks error:', tasksError);
     console.log('StudentDashboard - Subjects loaded:', subjects);
     console.log('StudentDashboard - Subjects loading:', subjectsLoading);
-  }, [user, tasks, tasksLoading, tasksError, subjects, subjectsLoading]);
+  }, [user, tasks, tasksLoading, subjects, subjectsLoading]);
 
   if (tasksLoading || subjectsLoading) {
     return (
@@ -54,16 +51,6 @@ const StudentDashboard = () => {
     );
   }
 
-  console.log('Current user ID:', user?.id);
-  console.log('Current user email:', user?.email);
-  console.log('All tasks fetched for student dashboard:', tasks);
-  console.log('All subjects fetched:', subjects);
-
-  // Since useTasks already filters by student ID, we can use tasks directly
-  const studentTasks = tasks;
-
-  console.log('Student tasks (should be filtered by user ID):', studentTasks);
-
   const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
     console.log(`Student updating task ${taskId} to status ${newStatus}`);
     const success = await updateTaskStatus(taskId, newStatus);
@@ -76,11 +63,38 @@ const StudentDashboard = () => {
 
   // Get tasks for a specific subject
   const getTasksForSubject = (subjectId: string) => {
-    return studentTasks.filter(task => task.subject_id === subjectId);
+    return tasks.filter(task => task.subject_id === subjectId);
   };
 
-  // If we have tasks but no subjects, show a different message
-  if (studentTasks.length > 0 && subjects.length === 0) {
+  // Only show subjects that have tasks assigned
+  const subjectsWithTasks = subjects.filter(subject => {
+    const subjectTasks = getTasksForSubject(subject.id);
+    return subjectTasks.length > 0;
+  });
+
+  // If no tasks at all
+  if (tasks.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+          <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
+          <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+        </div>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <HelpCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No tasks found</h3>
+            <p className="text-gray-500 mb-4">Check back later or contact your teacher if you think you should have tasks assigned.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // If we have tasks but no subjects with tasks, something is wrong
+  if (subjectsWithTasks.length === 0) {
     return (
       <div className="space-y-6">
         <div>
@@ -96,20 +110,20 @@ const StudentDashboard = () => {
               <h3 className="text-lg font-semibold text-gray-700">Loading subjects...</h3>
             </div>
             <p className="text-gray-600 mb-4">
-              We found {studentTasks.length} tasks for you, but we're still loading the subject information. 
-              This should resolve shortly.
+              We found {tasks.length} tasks for you, but we're still loading the subject information.
             </p>
             
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold text-gray-700 mb-2">Your Tasks (Ungrouped):</h4>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {studentTasks.map(task => {
+                {tasks.map(task => {
+                  const subject = subjects.find(s => s.id === task.subject_id);
                   const transformedTask = {
                     id: task.id,
                     title: task.title,
                     description: task.description || '',
                     studentId: task.student_id,
-                    subject: 'Loading...',
+                    subject: subject?.name || 'Loading...',
                     status: task.status,
                     timeInStatus: task.time_in_status || 0,
                     createdAt: task.created_at
@@ -131,44 +145,7 @@ const StudentDashboard = () => {
     );
   }
 
-  // Only show subjects that have tasks assigned
-  const subjectsWithTasks = subjects.filter(subject => {
-    const subjectTasks = getTasksForSubject(subject.id);
-    return subjectTasks.length > 0;
-  });
-
-  // If no tasks at all
-  if (studentTasks.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
-          <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
-          <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
-        </div>
-
-        <Card>
-          <CardContent className="p-6 text-center">
-            <HelpCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No tasks found</h3>
-            <p className="text-gray-500 mb-4">Check back later or contact your teacher if you think you should have tasks assigned.</p>
-            
-            <div className="bg-gray-50 p-4 rounded-lg text-left">
-              <h4 className="font-semibold text-gray-700 mb-2">Debug Information:</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <p><strong>User ID:</strong> {user?.id}</p>
-                <p><strong>Email:</strong> {user?.email}</p>
-                <p><strong>Total tasks found:</strong> {studentTasks.length}</p>
-                <p><strong>Total subjects found:</strong> {subjects.length}</p>
-                <p><strong>Looking for tasks with student_id:</strong> {user?.id}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+  // Main board view with subjects and tasks
   return (
     <div className="space-y-6">
       <div>
@@ -197,7 +174,6 @@ const StudentDashboard = () => {
                     <td key={subject.id} className="px-2 py-4 border-r border-gray-200 min-h-[200px] align-top">
                       <div className="space-y-2">
                         {subjectTasks.map(task => {
-                          // Transform task to match TaskCard interface
                           const transformedTask = {
                             id: task.id,
                             title: task.title,

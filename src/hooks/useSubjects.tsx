@@ -16,15 +16,17 @@ export const useSubjects = () => {
   const channelRef = useRef<any>(null);
 
   const fetchSubjects = async () => {
-    // Allow all authenticated users to fetch subjects
     if (!user) {
       console.log('No user found, skipping subjects fetch');
+      setSubjects([]);
       setLoading(false);
       return;
     }
 
     try {
       console.log('Fetching subjects for user:', user.id);
+      setLoading(true);
+      
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
@@ -32,19 +34,26 @@ export const useSubjects = () => {
 
       if (error) {
         console.error('Error fetching subjects:', error);
+        setSubjects([]);
       } else {
         console.log('Successfully fetched subjects:', data);
         setSubjects(data || []);
       }
     } catch (error) {
       console.error('Error fetching subjects:', error);
+      setSubjects([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSubjects();
+    if (user) {
+      fetchSubjects();
+    } else {
+      setLoading(false);
+      setSubjects([]);
+    }
   }, [user]);
 
   // Set up real-time subscription for all authenticated users
