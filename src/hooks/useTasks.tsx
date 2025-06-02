@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,49 +43,75 @@ export const useTasks = () => {
       console.log('Fetching tasks for user:', user.id, 'with roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
       
-      let query = supabase
+      // First, let's try a simple query without joins to see if we can get the basic tasks
+      let simpleQuery = supabase
+        .from('tasks')
+        .select('*');
+
+      // If user is a student, filter by their user ID
+      if (isStudent && !isAdmin && !isTeacher) {
+        console.log('Fetching tasks for student with user ID:', user.id);
+        simpleQuery = simpleQuery.eq('student_id', user.id);
+      }
+
+      console.log('Executing simple tasks query without joins...');
+      const { data: simpleTasks, error: simpleError } = await simpleQuery.order('created_at', { ascending: false });
+
+      if (simpleError) {
+        console.error('Error fetching simple tasks:', simpleError);
+        setError(`Error fetching tasks: ${simpleError.message}`);
+        setTasks([]);
+        return;
+      }
+
+      console.log('Simple tasks query result:', simpleTasks);
+      console.log('Number of simple tasks fetched:', simpleTasks?.length || 0);
+
+      if (!simpleTasks || simpleTasks.length === 0) {
+        console.log('No tasks found with simple query. This means there is a real data issue.');
+        // Let's also check what the exact student_id values look like in the database
+        const { data: debugTasks, error: debugError } = await supabase
+          .from('tasks')
+          .select('id, student_id, title')
+          .limit(5);
+        
+        console.log('Debug - All tasks in database (first 5):', debugTasks);
+        console.log('Debug - Looking for student_id exactly matching:', user.id);
+        console.log('Debug - User ID type:', typeof user.id);
+        
+        if (debugTasks && debugTasks.length > 0) {
+          debugTasks.forEach(task => {
+            console.log(`Task ${task.id}: student_id="${task.student_id}" (type: ${typeof task.student_id}), matches user: ${task.student_id === user.id}`);
+          });
+        }
+        
+        setTasks([]);
+        return;
+      }
+
+      // Now try to enrich with student and subject data
+      console.log('Enriching tasks with student and subject data...');
+      
+      const { data: enrichedTasks, error: enrichError } = await supabase
         .from('tasks')
         .select(`
           *,
           students(name, email),
           subjects(name)
-        `);
+        `)
+        .in('id', simpleTasks.map(t => t.id))
+        .order('created_at', { ascending: false });
 
-      // If user is a student, filter by their user ID
-      if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Fetching tasks for student with user ID:', user.id);
-        query = query.eq('student_id', user.id);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      console.log('Executing tasks query...');
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        setError(`Error fetching tasks: ${error.message}`);
-        setTasks([]);
+      if (enrichError) {
+        console.error('Error enriching tasks:', enrichError);
+        // Use simple tasks if enrichment fails
+        console.log('Using simple tasks without enrichment due to error');
+        setTasks(simpleTasks as Task[]);
       } else {
-        console.log('Successfully fetched tasks:', data);
-        console.log('Number of tasks fetched:', data?.length || 0);
-        
-        // Debug: Let's also check what tasks exist for debugging
-        if (isStudent && (!data || data.length === 0)) {
-          console.log('No tasks found for student. Checking database...');
-          const { data: debugTasks, error: debugError } = await supabase
-            .from('tasks')
-            .select('id, student_id, title, status')
-            .limit(5);
-          
-          if (!debugError && debugTasks) {
-            console.log('Sample tasks in database:', debugTasks);
-            console.log('Current user ID to match:', user.id);
-          }
-        }
-        
-        setTasks(data || []);
+        console.log('Successfully enriched tasks:', enrichedTasks);
+        setTasks(enrichedTasks || []);
       }
+
     } catch (error) {
       console.error('Error fetching tasks:', error);
       setError('Failed to fetch tasks');
