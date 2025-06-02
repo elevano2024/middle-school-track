@@ -81,7 +81,8 @@ export const useTasks = () => {
         console.log('Tasks data changed via real-time:', payload);
         
         // Only refetch if this wasn't an update we initiated
-        const taskId = payload.new?.id || payload.old?.id;
+        // Safely access the id property with proper type checking
+        const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
         if (taskId && !updatingTasksRef.current.has(taskId)) {
           console.log('Refetching tasks due to external change');
           fetchTasks();
