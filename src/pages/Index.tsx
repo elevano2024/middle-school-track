@@ -80,9 +80,7 @@ const Index = () => {
     // Let's try multiple ways to access it
     let subjectName = '';
     
-    if (task.subject?.name) {
-      subjectName = task.subject.name;
-    } else if (task.subjects?.name) {
+    if (task.subjects?.name) {
       subjectName = task.subjects.name;
     } else {
       // If no subject name found in joined data, try to find it by subject_id

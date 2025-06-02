@@ -29,6 +29,7 @@ export const useTasks = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
   const channelRef = useRef<any>(null);
+  const updatingTasksRef = useRef<Set<string>>(new Set());
 
   const fetchTasks = async () => {
     if (!user || (!isAdmin && !isTeacher)) {
@@ -76,9 +77,17 @@ export const useTasks = () => {
     // Create new channel
     channelRef.current = supabase
       .channel('tasks-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        console.log('Tasks data changed, refetching...');
-        fetchTasks();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+        console.log('Tasks data changed via real-time:', payload);
+        
+        // Only refetch if this wasn't an update we initiated
+        const taskId = payload.new?.id || payload.old?.id;
+        if (taskId && !updatingTasksRef.current.has(taskId)) {
+          console.log('Refetching tasks due to external change');
+          fetchTasks();
+        } else {
+          console.log('Skipping refetch for self-initiated update');
+        }
       })
       .subscribe();
 
@@ -91,9 +100,25 @@ export const useTasks = () => {
   }, [user, isAdmin, isTeacher]);
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
+    // Prevent duplicate updates
+    if (updatingTasksRef.current.has(taskId)) {
+      console.log(`Task ${taskId} is already being updated, skipping`);
+      return false;
+    }
+
     try {
       console.log(`Updating task ${taskId} status to ${newStatus}`);
+      updatingTasksRef.current.add(taskId);
       
+      // Optimistically update local state first for immediate UI feedback
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, status: newStatus, time_in_status: 0, updated_at: new Date().toISOString() }
+            : task
+        )
+      );
+
       const { error } = await supabase
         .from('tasks')
         .update({ 
@@ -105,16 +130,23 @@ export const useTasks = () => {
 
       if (error) {
         console.error('Error updating task status:', error);
+        // Revert optimistic update on error
+        fetchTasks();
         return false;
       }
 
       console.log(`Successfully updated task ${taskId} status to ${newStatus}`);
-      
-      // The real-time subscription will automatically refresh the data
       return true;
     } catch (error) {
       console.error('Error updating task status:', error);
+      // Revert optimistic update on error
+      fetchTasks();
       return false;
+    } finally {
+      // Remove from updating set after a brief delay to prevent race conditions
+      setTimeout(() => {
+        updatingTasksRef.current.delete(taskId);
+      }, 1000);
     }
   };
 

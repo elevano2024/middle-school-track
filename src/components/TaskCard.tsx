@@ -10,6 +10,7 @@ interface TaskCardProps {
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const getStatusConfig = (status: TaskStatus) => {
     switch (status) {
@@ -42,9 +43,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
   const statusConfig = getStatusConfig(task.status);
 
-  const handleStatusChange = (newStatus: TaskStatus) => {
-    onUpdateStatus(task.id, newStatus);
-    console.log(`Task "${task.title}" status changed to ${newStatus}`);
+  const handleStatusChange = async (newStatus: TaskStatus) => {
+    if (isUpdating || newStatus === task.status) return;
+    
+    setIsUpdating(true);
+    console.log(`Task "${task.title}" status changing to ${newStatus}`);
+    
+    try {
+      await onUpdateStatus(task.id, newStatus);
+      console.log(`Task "${task.title}" status changed to ${newStatus}`);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStatusOptions = (): TaskStatus[] => {
@@ -52,7 +64,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   };
 
   return (
-    <div className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${statusConfig.color}`}>
+    <div className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${statusConfig.color} ${isUpdating ? 'opacity-50' : ''}`}>
       <div onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex items-start justify-between mb-2">
           <h4 className="text-sm font-semibold line-clamp-2">{task.title}</h4>
@@ -82,11 +94,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
                   e.stopPropagation();
                   handleStatusChange(status);
                 }}
+                disabled={isUpdating || status === task.status}
                 className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${
                   status === task.status 
                     ? 'bg-gray-200 font-medium' 
                     : 'hover:bg-gray-100'
-                }`}
+                } ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {getStatusConfig(status).label}
               </button>
