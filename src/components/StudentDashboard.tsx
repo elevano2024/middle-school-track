@@ -1,8 +1,9 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
+import { supabase } from '@/integrations/supabase/client';
 import TaskCard from './TaskCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { setupStudentTestData } from '@/utils/setupTestData';
@@ -11,6 +12,48 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
+  const [studentRecord, setStudentRecord] = useState<any>(null);
+  const [studentLoading, setStudentLoading] = useState(true);
+
+  // Fetch the student record for the current user
+  useEffect(() => {
+    const fetchStudentRecord = async () => {
+      if (!user) return;
+
+      try {
+        // First, try to find student by email match with user email
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileData) {
+          // Look for a student with matching name or email
+          const { data: studentData, error } = await supabase
+            .from('students')
+            .select('*')
+            .ilike('name', `%${profileData.full_name || user.email}%`)
+            .limit(1);
+
+          if (error) {
+            console.error('Error fetching student record:', error);
+          } else if (studentData && studentData.length > 0) {
+            console.log('Found student record:', studentData[0]);
+            setStudentRecord(studentData[0]);
+          } else {
+            console.log('No student record found for user');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching student record:', error);
+      } finally {
+        setStudentLoading(false);
+      }
+    };
+
+    fetchStudentRecord();
+  }, [user]);
 
   // Set up test data on component mount for development
   useEffect(() => {
@@ -20,7 +63,7 @@ const StudentDashboard = () => {
     }
   }, [user]);
 
-  if (tasksLoading || subjectsLoading) {
+  if (tasksLoading || subjectsLoading || studentLoading) {
     return (
       <div className="p-6">
         <Card>
@@ -33,14 +76,17 @@ const StudentDashboard = () => {
   }
 
   console.log('Current user:', user?.email);
+  console.log('Student record:', studentRecord);
   console.log('All tasks fetched:', tasks);
   console.log('User ID:', user?.id);
 
-  // Filter tasks to only show the current student's tasks
-  const studentTasks = tasks.filter(task => {
-    console.log('Comparing task student_id:', task.student_id, 'with user ID:', user?.id);
-    return task.student_id === user?.id;
-  });
+  // Filter tasks to only show the current student's tasks using the student record ID
+  const studentTasks = studentRecord 
+    ? tasks.filter(task => {
+        console.log('Comparing task student_id:', task.student_id, 'with student record ID:', studentRecord.id);
+        return task.student_id === studentRecord.id;
+      })
+    : [];
 
   console.log('Filtered student tasks:', studentTasks);
 
@@ -124,11 +170,22 @@ const StudentDashboard = () => {
           <p className="text-sm">Total tasks found: {tasks.length}</p>
           <p className="text-sm">Student tasks: {studentTasks.length}</p>
           <p className="text-sm">User ID: {user?.id}</p>
+          <p className="text-sm">Student Record ID: {studentRecord?.id || 'Not found'}</p>
+          <p className="text-sm">Student Name: {studentRecord?.name || 'Not found'}</p>
         </CardContent>
       </Card>
 
       {/* Tasks by Subject */}
-      {Object.keys(tasksBySubject).length === 0 ? (
+      {!studentRecord ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-500">No student record found for your account.</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Please contact your teacher to set up your student profile.
+            </p>
+          </CardContent>
+        </Card>
+      ) : Object.keys(tasksBySubject).length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>

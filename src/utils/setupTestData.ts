@@ -5,6 +5,13 @@ export const setupStudentTestData = async () => {
   try {
     console.log('Setting up test data for student...');
 
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return;
+    }
+
     // First, let's get all subjects to create tasks for each one
     const { data: subjects, error: subjectsError } = await supabase
       .from('subjects')
@@ -17,22 +24,31 @@ export const setupStudentTestData = async () => {
 
     console.log('Available subjects:', subjects);
 
+    // Get the user's profile to find their name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    const userName = profile?.full_name || 'Ravi Singh';
+
     // Check if the student user already exists in the students table
     const { data: existingStudent, error: studentCheckError } = await supabase
       .from('students')
       .select('*')
-      .eq('name', 'Ravi Singh')
+      .ilike('name', `%${userName}%`)
       .single();
 
     let studentId;
 
     if (studentCheckError && studentCheckError.code === 'PGRST116') {
       // Student doesn't exist, create them
-      console.log('Creating student record...');
+      console.log('Creating student record for:', userName);
       const { data: newStudent, error: createStudentError } = await supabase
         .from('students')
         .insert({
-          name: 'Ravi Singh',
+          name: userName,
           grade: '8'
         })
         .select()
