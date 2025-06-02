@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,102 +41,74 @@ export const useTasks = () => {
     }
 
     try {
-      console.log('=== COMPREHENSIVE DEBUGGING ===');
+      console.log('=== FETCHING TASKS WITH SUBJECT DATA ===');
       console.log('User ID:', user.id);
       console.log('User roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
       
-      // Step 1: Check if there are ANY tasks in the database
-      console.log('Step 1: Checking all tasks in database...');
-      const { data: allTasks, error: allTasksError } = await supabase
+      // Build the query based on user role
+      let query = supabase
         .from('tasks')
-        .select('*');
-      
-      console.log('All tasks query result:', allTasks);
-      console.log('All tasks query error:', allTasksError);
-      console.log('Total tasks in database:', allTasks?.length || 0);
-      
-      if (allTasks && allTasks.length > 0) {
-        console.log('Sample task data:', allTasks[0]);
-        allTasks.forEach((task, index) => {
-          console.log(`Task ${index + 1}: id=${task.id}, student_id="${task.student_id}", title="${task.title}"`);
-        });
+        .select(`
+          *,
+          students(name, email),
+          subjects(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      // Filter by student ID if the user is a student (but not admin/teacher)
+      if (isStudent && !isAdmin && !isTeacher) {
+        console.log('Filtering tasks for student with ID:', user.id);
+        query = query.eq('student_id', user.id);
       }
 
-      // Step 2: Check students table
-      console.log('Step 2: Checking students table...');
-      const { data: allStudents, error: studentsError } = await supabase
-        .from('students')
-        .select('*');
-      
-      console.log('All students:', allStudents);
-      console.log('Students error:', studentsError);
-      
-      if (allStudents && allStudents.length > 0) {
-        allStudents.forEach((student, index) => {
-          console.log(`Student ${index + 1}: id="${student.id}", name="${student.name}", email="${student.email}"`);
-        });
-      }
+      const { data: tasksData, error: fetchError } = await query;
 
-      // Step 3: Check if current user exists in students table
-      console.log('Step 3: Checking if current user exists in students table...');
-      const { data: currentUserAsStudent, error: currentUserError } = await supabase
-        .from('students')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      console.log('Current user in students table:', currentUserAsStudent);
-      console.log('Current user query error:', currentUserError);
-
-      // Step 4: Check user_roles table
-      console.log('Step 4: Checking user_roles table...');
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      console.log('User roles in database:', userRoles);
-      console.log('User roles error:', rolesError);
-
-      // Step 5: If there are no tasks, let's see what we can create
-      if (!allTasks || allTasks.length === 0) {
-        console.log('No tasks found in database. This might be expected if this is a fresh installation.');
-        setTasks([]);
+      if (fetchError) {
+        console.error('Error fetching tasks:', fetchError);
+        setError('Failed to fetch tasks');
         return;
       }
 
-      // Step 6: Filter tasks for current user if they are a student
-      let filteredTasks = allTasks;
-      if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Filtering tasks for student with ID:', user.id);
-        filteredTasks = allTasks.filter(task => task.student_id === user.id);
-        console.log('Filtered tasks for student:', filteredTasks);
-      }
+      console.log('Raw tasks data from database:', tasksData);
 
-      // Step 7: Try to enrich with student and subject data
-      if (filteredTasks.length > 0) {
-        console.log('Step 7: Enriching tasks with related data...');
-        const { data: enrichedTasks, error: enrichError } = await supabase
-          .from('tasks')
-          .select(`
-            *,
-            students(name, email),
-            subjects(name)
-          `)
-          .in('id', filteredTasks.map(t => t.id))
-          .order('created_at', { ascending: false });
+      // If we got tasks but subjects are null, let's fetch subjects separately
+      if (tasksData && tasksData.length > 0) {
+        // Check if any tasks have null subjects
+        const tasksWithNullSubjects = tasksData.filter(task => !task.subjects);
+        
+        if (tasksWithNullSubjects.length > 0) {
+          console.log('Some tasks have null subjects, fetching subjects separately...');
+          
+          // Get all unique subject IDs
+          const subjectIds = [...new Set(tasksData.map(task => task.subject_id))];
+          
+          // Fetch subjects separately
+          const { data: subjectsData, error: subjectsError } = await supabase
+            .from('subjects')
+            .select('id, name')
+            .in('id', subjectIds);
 
-        if (enrichError) {
-          console.error('Error enriching tasks:', enrichError);
-          setTasks(filteredTasks as Task[]);
-        } else {
-          console.log('Successfully enriched tasks:', enrichedTasks);
-          setTasks(enrichedTasks || []);
+          if (subjectsError) {
+            console.error('Error fetching subjects:', subjectsError);
+          } else {
+            console.log('Fetched subjects separately:', subjectsData);
+            
+            // Map subjects back to tasks
+            const enrichedTasks = tasksData.map(task => ({
+              ...task,
+              subjects: task.subjects || subjectsData?.find(s => s.id === task.subject_id) || null
+            }));
+            
+            console.log('Enriched tasks with subjects:', enrichedTasks);
+            setTasks(enrichedTasks);
+            return;
+          }
         }
-      } else {
-        setTasks([]);
       }
+
+      console.log('Final tasks data:', tasksData);
+      setTasks(tasksData || []);
 
     } catch (error) {
       console.error('Error in fetchTasks:', error);
