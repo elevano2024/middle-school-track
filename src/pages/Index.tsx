@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
@@ -61,21 +60,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
       </div>
       
-      <div className="p-6">
-        <SummaryHeader tasks={tasks} />
-        <FleetBoard 
-          students={mockStudents}
-          subjects={subjects}
-          tasks={tasks}
-          onUpdateTaskStatus={updateTaskStatus}
-          getTasksForStudent={getTasksForStudent}
-        />
-      </div>
+      <SummaryHeader tasks={tasks} />
+      <FleetBoard 
+        students={mockStudents}
+        subjects={subjects}
+        tasks={tasks}
+        onUpdateTaskStatus={updateTaskStatus}
+        getTasksForStudent={getTasksForStudent}
+      />
     </div>
   );
 };
