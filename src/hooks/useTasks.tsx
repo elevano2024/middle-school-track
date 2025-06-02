@@ -34,6 +34,7 @@ export const useTasks = () => {
 
   const fetchTasks = async () => {
     if (!user) {
+      console.log('No user found, skipping task fetch');
       setLoading(false);
       return;
     }
@@ -57,13 +58,36 @@ export const useTasks = () => {
 
       query = query.order('created_at', { ascending: false });
 
+      console.log('About to execute query...');
       const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching tasks:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
       } else {
         console.log('Successfully fetched tasks:', data);
         console.log('Number of tasks fetched:', data?.length || 0);
+        
+        // Let's also check if there are ANY tasks in the database
+        const { data: allTasks, error: allTasksError } = await supabase
+          .from('tasks')
+          .select('id, student_id, title')
+          .limit(10);
+          
+        if (allTasksError) {
+          console.error('Error fetching all tasks for debugging:', allTasksError);
+        } else {
+          console.log('All tasks in database (first 10):', allTasks);
+          console.log('Looking for tasks with student_id:', user.id);
+          const matchingTasks = allTasks?.filter(task => task.student_id === user.id) || [];
+          console.log('Tasks matching user ID:', matchingTasks);
+        }
+        
         setTasks(data || []);
       }
     } catch (error) {
@@ -75,7 +99,14 @@ export const useTasks = () => {
 
   useEffect(() => {
     console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent });
-    fetchTasks();
+    
+    // Only fetch tasks if we have a user and the roles have been loaded
+    // (at least one role should be true, or all should be false if no role assigned)
+    if (user && (isAdmin || isTeacher || isStudent)) {
+      fetchTasks();
+    } else if (user) {
+      console.log('User found but roles not loaded yet, waiting...');
+    }
   }, [user, isAdmin, isTeacher, isStudent]);
 
   // Set up real-time subscription with proper cleanup
