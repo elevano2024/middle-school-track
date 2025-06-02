@@ -39,6 +39,8 @@ export const useTasks = () => {
     }
 
     try {
+      console.log('Fetching tasks for user:', user.id, 'with roles:', { isAdmin, isTeacher, isStudent });
+      
       let query = supabase
         .from('tasks')
         .select(`
@@ -61,6 +63,7 @@ export const useTasks = () => {
         console.error('Error fetching tasks:', error);
       } else {
         console.log('Successfully fetched tasks:', data);
+        console.log('Number of tasks fetched:', data?.length || 0);
         setTasks(data || []);
       }
     } catch (error) {
@@ -71,6 +74,7 @@ export const useTasks = () => {
   };
 
   useEffect(() => {
+    console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent });
     fetchTasks();
   }, [user, isAdmin, isTeacher, isStudent]);
 

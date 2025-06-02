@@ -14,6 +14,8 @@ const StudentDashboard = () => {
   // Add debugging to see what's happening
   useEffect(() => {
     console.log('StudentDashboard - Current user:', user);
+    console.log('StudentDashboard - User ID:', user?.id);
+    console.log('StudentDashboard - User email:', user?.email);
     console.log('StudentDashboard - Tasks loaded:', tasks);
     console.log('StudentDashboard - Tasks loading:', tasksLoading);
   }, [user, tasks, tasksLoading]);
@@ -30,13 +32,14 @@ const StudentDashboard = () => {
     );
   }
 
+  console.log('Current user ID:', user?.id);
   console.log('Current user email:', user?.email);
   console.log('All tasks fetched for student dashboard:', tasks);
 
-  // Since useTasks already filters by student email, we can use tasks directly
+  // Since useTasks already filters by student ID, we can use tasks directly
   const studentTasks = tasks;
 
-  console.log('Student tasks filtered by email:', studentTasks);
+  console.log('Student tasks (should be filtered by user ID):', studentTasks);
 
   // Group tasks by subject
   const tasksBySubject = studentTasks.reduce((acc, task) => {
@@ -81,6 +84,7 @@ const StudentDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
         <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
         <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+        <p className="text-xs text-gray-400 mt-1">User ID: {user?.id}</p>
       </div>
 
       {/* Status Summary */}
@@ -117,7 +121,7 @@ const StudentDashboard = () => {
           <CardContent className="p-4">
             <h3 className="font-semibold text-green-800 mb-2">✅ Great! Your tasks are loading correctly!</h3>
             <p className="text-sm text-green-700">
-              Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} assigned to {user?.email}
+              Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} assigned to your account (ID: {user?.id})
             </p>
           </CardContent>
         </Card>
@@ -129,11 +133,12 @@ const StudentDashboard = () => {
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>
             <p className="text-sm text-gray-400 mt-2">
-              If you should have tasks, please contact your teacher or check that you're logged in with the correct email.
+              If you should have tasks, please contact your teacher or check that you're logged in with the correct account.
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Looking for tasks assigned to: {user?.email}
-            </p>
+            <div className="text-xs text-gray-400 mt-1 space-y-1">
+              <p>Looking for tasks assigned to user ID: {user?.id}</p>
+              <p>Email: {user?.email}</p>
+            </div>
           </CardContent>
         </Card>
       ) : (
