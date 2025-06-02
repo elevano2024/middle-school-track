@@ -3,10 +3,10 @@ import React, { useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubjects } from '@/hooks/useSubjects';
-import SubjectTaskWidget from './SubjectTaskWidget';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import TaskCard from './TaskCard';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, Clock, HelpCircle, BookOpen } from 'lucide-react';
+import { AlertCircle, Clock, HelpCircle } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -74,44 +74,21 @@ const StudentDashboard = () => {
     }
   };
 
-  const getGlobalStatusCounts = () => {
-    const counts = {
-      working: 0,
-      'need-help': 0,
-      'ready-review': 0,
-      completed: 0
-    };
-    
-    studentTasks.forEach(task => {
-      counts[task.status as keyof typeof counts]++;
+  // Get tasks for a specific subject
+  const getTasksForSubject = (subjectName: string) => {
+    return studentTasks.filter(task => {
+      // Try to find subject name from subjects array
+      const subject = subjects.find(s => s.id === task.subject_id);
+      const taskSubjectName = subject?.name || 'Unknown Subject';
+      return taskSubjectName === subjectName;
     });
-    
-    return counts;
   };
 
-  const globalStatusCounts = getGlobalStatusCounts();
-
-  // Group tasks by subject, now using the fetched subjects
-  const tasksBySubject: Record<string, typeof tasks> = {};
-  
-  // First, create entries for all subjects (even those without tasks)
-  subjects.forEach(subject => {
-    tasksBySubject[subject.name] = [];
+  // Only show subjects that have tasks assigned
+  const subjectsWithTasks = subjects.filter(subject => {
+    const subjectTasks = getTasksForSubject(subject.name);
+    return subjectTasks.length > 0;
   });
-  
-  // Then, populate with tasks
-  studentTasks.forEach(task => {
-    // Try to find subject name from subjects array
-    const subject = subjects.find(s => s.id === task.subject_id);
-    const subjectName = subject?.name || 'Unknown Subject';
-    
-    if (!tasksBySubject[subjectName]) {
-      tasksBySubject[subjectName] = [];
-    }
-    tasksBySubject[subjectName].push(task);
-  });
-
-  console.log('Tasks grouped by subject:', tasksBySubject);
 
   return (
     <div className="space-y-6">
@@ -121,42 +98,11 @@ const StudentDashboard = () => {
         <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
       </div>
 
-      {/* Global Status Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <BookOpen className="h-5 w-5 mr-2" />
-            Overall Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{globalStatusCounts.working}</div>
-              <div className="text-sm text-gray-600">Working</div>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{globalStatusCounts['need-help']}</div>
-              <div className="text-sm text-gray-600">Need Help</div>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{globalStatusCounts['ready-review']}</div>
-              <div className="text-sm text-gray-600">Ready for Review</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{globalStatusCounts.completed}</div>
-              <div className="text-sm text-gray-600">Completed</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Subject-based Task Widgets */}
-      {Object.keys(tasksBySubject).length === 0 ? (
+      {subjectsWithTasks.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <HelpCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">No subjects or tasks found</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No tasks found</h3>
             <p className="text-gray-500 mb-4">Check back later or contact your teacher if you think you should have tasks assigned.</p>
             
             <div className="bg-gray-50 p-4 rounded-lg text-left">
@@ -172,27 +118,55 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <>
-          {/* Success Message */}
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} across {Object.keys(tasksBySubject).length} subject{Object.keys(tasksBySubject).length !== 1 ? 's' : ''}.
-            </AlertDescription>
-          </Alert>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  {subjectsWithTasks.map(subject => (
+                    <th key={subject.id} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[200px]">
+                      {subject.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {subjectsWithTasks.map(subject => {
+                    const subjectTasks = getTasksForSubject(subject.name);
+                    return (
+                      <td key={subject.id} className="px-2 py-4 border-r border-gray-200 min-h-[200px] align-top">
+                        <div className="space-y-2">
+                          {subjectTasks.map(task => {
+                            // Transform task to match TaskCard interface
+                            const transformedTask = {
+                              id: task.id,
+                              title: task.title,
+                              description: task.description || '',
+                              studentId: task.student_id,
+                              subject: subject.name,
+                              status: task.status,
+                              timeInStatus: task.time_in_status || 0,
+                              createdAt: task.created_at
+                            };
 
-          {/* Subject Widgets */}
-          <div className="space-y-6">
-            {Object.entries(tasksBySubject).map(([subjectName, subjectTasks]) => (
-              <SubjectTaskWidget
-                key={subjectName}
-                subjectName={subjectName}
-                tasks={subjectTasks}
-                onUpdateTaskStatus={handleUpdateTaskStatus}
-              />
-            ))}
+                            return (
+                              <TaskCard
+                                key={task.id}
+                                task={transformedTask}
+                                onUpdateStatus={handleUpdateTaskStatus}
+                              />
+                            );
+                          })}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
