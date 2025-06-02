@@ -75,30 +75,78 @@ const StudentDashboard = () => {
   };
 
   // Get tasks for a specific subject
-  const getTasksForSubject = (subjectName: string) => {
-    return studentTasks.filter(task => {
-      // Try to find subject name from subjects array
-      const subject = subjects.find(s => s.id === task.subject_id);
-      const taskSubjectName = subject?.name || 'Unknown Subject';
-      return taskSubjectName === subjectName;
-    });
+  const getTasksForSubject = (subjectId: string) => {
+    return studentTasks.filter(task => task.subject_id === subjectId);
   };
+
+  // If we have tasks but no subjects, show a different message
+  if (studentTasks.length > 0 && subjects.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+          <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
+          <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              <h3 className="text-lg font-semibold text-gray-700">Loading subjects...</h3>
+            </div>
+            <p className="text-gray-600 mb-4">
+              We found {studentTasks.length} tasks for you, but we're still loading the subject information. 
+              This should resolve shortly.
+            </p>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-700 mb-2">Your Tasks (Ungrouped):</h4>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {studentTasks.map(task => {
+                  const transformedTask = {
+                    id: task.id,
+                    title: task.title,
+                    description: task.description || '',
+                    studentId: task.student_id,
+                    subject: 'Loading...',
+                    status: task.status,
+                    timeInStatus: task.time_in_status || 0,
+                    createdAt: task.created_at
+                  };
+
+                  return (
+                    <TaskCard
+                      key={task.id}
+                      task={transformedTask}
+                      onUpdateStatus={handleUpdateTaskStatus}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Only show subjects that have tasks assigned
   const subjectsWithTasks = subjects.filter(subject => {
-    const subjectTasks = getTasksForSubject(subject.name);
+    const subjectTasks = getTasksForSubject(subject.id);
     return subjectTasks.length > 0;
   });
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
-        <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
-        <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
-      </div>
+  // If no tasks at all
+  if (studentTasks.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+          <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
+          <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+        </div>
 
-      {subjectsWithTasks.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center">
             <HelpCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -117,57 +165,67 @@ const StudentDashboard = () => {
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  {subjectsWithTasks.map(subject => (
-                    <th key={subject.id} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[200px]">
-                      {subject.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {subjectsWithTasks.map(subject => {
-                    const subjectTasks = getTasksForSubject(subject.name);
-                    return (
-                      <td key={subject.id} className="px-2 py-4 border-r border-gray-200 min-h-[200px] align-top">
-                        <div className="space-y-2">
-                          {subjectTasks.map(task => {
-                            // Transform task to match TaskCard interface
-                            const transformedTask = {
-                              id: task.id,
-                              title: task.title,
-                              description: task.description || '',
-                              studentId: task.student_id,
-                              subject: subject.name,
-                              status: task.status,
-                              timeInStatus: task.time_in_status || 0,
-                              createdAt: task.created_at
-                            };
+      </div>
+    );
+  }
 
-                            return (
-                              <TaskCard
-                                key={task.id}
-                                task={transformedTask}
-                                onUpdateStatus={handleUpdateTaskStatus}
-                              />
-                            );
-                          })}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+        <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
+        <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                {subjectsWithTasks.map(subject => (
+                  <th key={subject.id} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[200px]">
+                    {subject.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                {subjectsWithTasks.map(subject => {
+                  const subjectTasks = getTasksForSubject(subject.id);
+                  return (
+                    <td key={subject.id} className="px-2 py-4 border-r border-gray-200 min-h-[200px] align-top">
+                      <div className="space-y-2">
+                        {subjectTasks.map(task => {
+                          // Transform task to match TaskCard interface
+                          const transformedTask = {
+                            id: task.id,
+                            title: task.title,
+                            description: task.description || '',
+                            studentId: task.student_id,
+                            subject: subject.name,
+                            status: task.status,
+                            timeInStatus: task.time_in_status || 0,
+                            createdAt: task.created_at
+                          };
+
+                          return (
+                            <TaskCard
+                              key={task.id}
+                              task={transformedTask}
+                              onUpdateStatus={handleUpdateTaskStatus}
+                            />
+                          );
+                        })}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
