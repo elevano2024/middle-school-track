@@ -25,7 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={
+            <Route path="/*" element={
               <SidebarProvider>
                 <div className="min-h-screen flex w-full">
                   <ProtectedLayout>
