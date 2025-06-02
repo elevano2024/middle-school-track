@@ -142,13 +142,7 @@ export const AddTaskForm = () => {
             <SelectContent>
               {subjects.map((subject) => (
                 <SelectItem key={subject.id} value={subject.id}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: subject.color }}
-                    />
-                    {subject.name}
-                  </div>
+                  {subject.name}
                 </SelectItem>
               ))}
             </SelectContent>
