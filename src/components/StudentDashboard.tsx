@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,14 +10,6 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
-
-  // Set up test data on component mount for development
-  useEffect(() => {
-    if (user && user.email === 'ravigillsingh12@gmail.com') {
-      console.log('Setting up test data for student user');
-      setupStudentTestData();
-    }
-  }, [user]);
 
   if (tasksLoading || subjectsLoading) {
     return (

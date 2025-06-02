@@ -18,10 +18,10 @@ export interface Task {
   students?: {
     name: string;
     email?: string;
-  };
+  } | null;
   subjects?: {
     name: string;
-  };
+  } | null;
 }
 
 export const useTasks = () => {
