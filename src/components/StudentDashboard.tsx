@@ -111,16 +111,17 @@ const StudentDashboard = () => {
         </Card>
       </div>
 
-      {/* Debug Information */}
-      <Card className="bg-gray-50">
-        <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Debug Info:</h3>
-          <p className="text-sm">Student tasks found: {studentTasks.length}</p>
-          <p className="text-sm">User email: {user?.email}</p>
-          <p className="text-sm">Raw tasks data: {JSON.stringify(tasks, null, 2)}</p>
-          <p className="text-sm">Query should filter by students.email = {user?.email}</p>
-        </CardContent>
-      </Card>
+      {/* Success Message */}
+      {studentTasks.length > 0 && (
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-green-800 mb-2">✅ Great! Your tasks are loading correctly!</h3>
+            <p className="text-sm text-green-700">
+              Found {studentTasks.length} task{studentTasks.length !== 1 ? 's' : ''} assigned to {user?.email}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tasks by Subject */}
       {Object.keys(tasksBySubject).length === 0 ? (
@@ -128,11 +129,10 @@ const StudentDashboard = () => {
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>
             <p className="text-sm text-gray-400 mt-2">
-              If you should have tasks, the issue might be that the students table doesn't have an email column 
-              or the email doesn't match exactly.
+              If you should have tasks, please contact your teacher or check that you're logged in with the correct email.
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Looking for tasks where students.email = {user?.email}
+              Looking for tasks assigned to: {user?.email}
             </p>
           </CardContent>
         </Card>
