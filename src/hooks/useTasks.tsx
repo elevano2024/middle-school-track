@@ -28,7 +28,7 @@ export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { isAdmin, isTeacher, isStudent } = useUserRole();
+  const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const channelRef = useRef<any>(null);
   const updatingTasksRef = useRef<Set<string>>(new Set());
 
@@ -72,22 +72,6 @@ export const useTasks = () => {
       } else {
         console.log('Successfully fetched tasks:', data);
         console.log('Number of tasks fetched:', data?.length || 0);
-        
-        // Let's also check if there are ANY tasks in the database
-        const { data: allTasks, error: allTasksError } = await supabase
-          .from('tasks')
-          .select('id, student_id, title')
-          .limit(10);
-          
-        if (allTasksError) {
-          console.error('Error fetching all tasks for debugging:', allTasksError);
-        } else {
-          console.log('All tasks in database (first 10):', allTasks);
-          console.log('Looking for tasks with student_id:', user.id);
-          const matchingTasks = allTasks?.filter(task => task.student_id === user.id) || [];
-          console.log('Tasks matching user ID:', matchingTasks);
-        }
-        
         setTasks(data || []);
       }
     } catch (error) {
@@ -98,16 +82,13 @@ export const useTasks = () => {
   };
 
   useEffect(() => {
-    console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent });
+    console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent }, 'roleLoading:', roleLoading);
     
-    // Only fetch tasks if we have a user and the roles have been loaded
-    // (at least one role should be true, or all should be false if no role assigned)
-    if (user && (isAdmin || isTeacher || isStudent)) {
+    // Fetch tasks if we have a user and roles have finished loading
+    if (user && !roleLoading) {
       fetchTasks();
-    } else if (user) {
-      console.log('User found but roles not loaded yet, waiting...');
     }
-  }, [user, isAdmin, isTeacher, isStudent]);
+  }, [user, isAdmin, isTeacher, isStudent, roleLoading]);
 
   // Set up real-time subscription with proper cleanup
   useEffect(() => {
