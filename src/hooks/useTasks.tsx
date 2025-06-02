@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -15,7 +15,7 @@ export interface Task {
   time_in_status: number | null;
   created_at: string;
   updated_at: string;
-  student?: {
+  students?: {
     name: string;
   };
   subject?: {
@@ -28,6 +28,7 @@ export const useTasks = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
+  const channelRef = useRef<any>(null);
 
   const fetchTasks = async () => {
     if (!user || (!isAdmin && !isTeacher)) {
@@ -62,11 +63,18 @@ export const useTasks = () => {
     fetchTasks();
   }, [user, isAdmin, isTeacher]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription with proper cleanup
   useEffect(() => {
     if (!user || (!isAdmin && !isTeacher)) return;
 
-    const channel = supabase
+    // Clean up existing channel if it exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Create new channel
+    channelRef.current = supabase
       .channel('tasks-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         console.log('Tasks data changed, refetching...');
@@ -75,7 +83,10 @@ export const useTasks = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user, isAdmin, isTeacher]);
 

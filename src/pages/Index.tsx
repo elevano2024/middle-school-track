@@ -75,8 +75,8 @@ const Index = () => {
 
   const transformedTasks = tasks.map(task => {
     console.log('Transforming task:', task);
-    // Fix: access subjects (plural) instead of subject (singular)
-    const subjectName = task.subjects?.name || '';
+    // Fix: access subject (from the joined subjects table)
+    const subjectName = task.subject?.name || '';
     console.log('Subject name for task:', subjectName);
     
     return {
@@ -98,9 +98,12 @@ const Index = () => {
   };
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
+    console.log(`Attempting to update task ${taskId} to status ${newStatus}`);
     const success = await updateTaskStatus(taskId, newStatus);
     if (success) {
       console.log(`Task ${taskId} status updated to ${newStatus}`);
+    } else {
+      console.error(`Failed to update task ${taskId} status to ${newStatus}`);
     }
   };
 
