@@ -51,7 +51,8 @@ export const useTasks = () => {
         .from('tasks')
         .select(`
           *,
-          students(name, email)
+          students(name, email),
+          subjects(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -69,7 +70,7 @@ export const useTasks = () => {
         return;
       }
 
-      console.log('Raw tasks data from database:', tasksData);
+      console.log('Raw tasks data from database with subjects join:', tasksData);
 
       if (!tasksData || tasksData.length === 0) {
         console.log('No tasks found');
@@ -77,38 +78,30 @@ export const useTasks = () => {
         return;
       }
 
-      // Get all unique subject IDs from the tasks
-      const subjectIds = [...new Set(tasksData.map(task => task.subject_id))];
-      console.log('Subject IDs to fetch:', subjectIds);
+      // Check if subjects are properly joined
+      const tasksWithSubjects = tasksData.filter(task => task.subjects?.name);
+      const tasksWithoutSubjects = tasksData.filter(task => !task.subjects?.name);
       
-      // Fetch subjects separately to ensure we get the subject names
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
-        .select('id, name')
-        .in('id', subjectIds);
-
-      if (subjectsError) {
-        console.error('Error fetching subjects:', subjectsError);
-        setError('Failed to fetch subject information');
-        return;
+      console.log('Tasks with subjects:', tasksWithSubjects.length);
+      console.log('Tasks without subjects:', tasksWithoutSubjects.length);
+      
+      if (tasksWithoutSubjects.length > 0) {
+        console.log('Tasks missing subject data:', tasksWithoutSubjects.map(t => ({ id: t.id, subject_id: t.subject_id })));
+        
+        // Fetch all subjects separately to check what exists
+        const { data: allSubjects, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('*');
+          
+        console.log('All subjects in database:', allSubjects);
+        
+        if (subjectsError) {
+          console.error('Error fetching all subjects:', subjectsError);
+        }
       }
-
-      console.log('Fetched subjects:', subjectsData);
       
-      // Create a map for quick subject lookup
-      const subjectsMap = new Map();
-      subjectsData?.forEach(subject => {
-        subjectsMap.set(subject.id, subject);
-      });
-
-      // Map subjects back to tasks
-      const enrichedTasks = tasksData.map(task => ({
-        ...task,
-        subjects: subjectsMap.get(task.subject_id) || null
-      }));
-      
-      console.log('Final enriched tasks with subjects:', enrichedTasks);
-      setTasks(enrichedTasks);
+      console.log('Final tasks with subjects:', tasksData);
+      setTasks(tasksData);
 
     } catch (error) {
       console.error('Error in fetchTasks:', error);
