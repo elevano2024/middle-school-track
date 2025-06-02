@@ -76,8 +76,7 @@ export const useTasks = () => {
       if (error) {
         console.error('Error fetching tasks:', error);
       } else {
-        console.log('Raw fetched tasks from Supabase:', data);
-        console.log('User role - isStudent:', isStudent, 'isAdmin:', isAdmin, 'isTeacher:', isTeacher);
+        console.log('Successfully fetched tasks:', data);
         setTasks(data || []);
       }
     } catch (error) {
@@ -131,7 +130,7 @@ export const useTasks = () => {
         channelRef.current = null;
       }
     };
-  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
+  }, [user?.id]);
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
     // Prevent duplicate updates
