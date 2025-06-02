@@ -4,8 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +14,7 @@ interface Profile {
   email: string;
   full_name: string;
   created_at: string;
-  user_roles?: { role: string }[];
+  user_roles?: { role: 'admin' | 'teacher' | 'student' }[];
 }
 
 const UserManagement = () => {
@@ -25,7 +23,7 @@ const UserManagement = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student' | ''>('');
 
   useEffect(() => {
     fetchProfiles();
@@ -33,20 +31,33 @@ const UserManagement = () => {
 
   const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching profiles:', error);
         toast.error('Failed to fetch users');
-      } else {
-        setProfiles(data || []);
+        return;
       }
+
+      // Fetch user roles separately
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+
+      // Combine profiles with their roles
+      const profilesWithRoles = profilesData?.map(profile => ({
+        ...profile,
+        user_roles: rolesData?.filter(role => role.user_id === profile.id).map(role => ({ role: role.role })) || []
+      })) || [];
+
+      setProfiles(profilesWithRoles);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       toast.error('Failed to fetch users');
@@ -127,7 +138,6 @@ const UserManagement = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="user-select">Select User</Label>
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a user" />
@@ -142,8 +152,7 @@ const UserManagement = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="role-select">Select Role</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <Select value={selectedRole} onValueChange={(value: 'admin' | 'teacher' | 'student') => setSelectedRole(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a role" />
                   </SelectTrigger>
@@ -180,11 +189,15 @@ const UserManagement = () => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {profile.user_roles?.map((userRole, index) => (
-                    <Badge key={index} variant="secondary">
-                      {userRole.role}
-                    </Badge>
-                  )) || <Badge variant="outline">No role assigned</Badge>}
+                  {profile.user_roles && profile.user_roles.length > 0 ? (
+                    profile.user_roles.map((userRole, index) => (
+                      <Badge key={index} variant="secondary">
+                        {userRole.role}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline">No role assigned</Badge>
+                  )}
                 </div>
               </div>
             ))}

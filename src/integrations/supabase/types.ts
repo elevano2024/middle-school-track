@@ -33,6 +33,102 @@ export type Database = {
         }
         Relationships: []
       }
+      students: {
+        Row: {
+          created_at: string
+          grade: Database["public"]["Enums"]["grade_level"]
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grade: Database["public"]["Enums"]["grade_level"]
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grade?: Database["public"]["Enums"]["grade_level"]
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          status: Database["public"]["Enums"]["task_status"]
+          student_id: string
+          subject_id: string
+          time_in_status: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["task_status"]
+          student_id: string
+          subject_id: string
+          time_in_status?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["task_status"]
+          student_id?: string
+          subject_id?: string
+          time_in_status?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_by: string | null
@@ -72,6 +168,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "teacher" | "student"
+      grade_level: "7" | "8" | "9" | "10" | "11" | "12"
+      task_status: "working" | "need-help" | "ready-review" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -188,6 +286,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "teacher", "student"],
+      grade_level: ["7", "8", "9", "10", "11", "12"],
+      task_status: ["working", "need-help", "ready-review", "completed"],
     },
   },
 } as const

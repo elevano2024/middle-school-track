@@ -1,0 +1,97 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { TaskStatus } from '@/types/workflow';
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  student_id: string;
+  subject_id: string;
+  status: TaskStatus;
+  time_in_status: number | null;
+  created_at: string;
+  updated_at: string;
+  student?: {
+    name: string;
+  };
+  subject?: {
+    name: string;
+  };
+}
+
+export const useTasks = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { isAdmin, isTeacher } = useUserRole();
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!user || (!isAdmin && !isTeacher)) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            students(name),
+            subjects(name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching tasks:', error);
+        } else {
+          setTasks(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [user, isAdmin, isTeacher]);
+
+  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          status: newStatus, 
+          time_in_status: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error updating task status:', error);
+        return false;
+      }
+
+      // Update local state
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, status: newStatus, time_in_status: 0 }
+            : task
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      return false;
+    }
+  };
+
+  return { tasks, loading, updateTaskStatus };
+};

@@ -46,7 +46,7 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible>
+    <Sidebar className={isCollapsed ? 'w-14' : 'w-60'} collapsible="icon">
       <SidebarHeader className="p-4">
         {!isCollapsed && (
           <h2 className="text-lg font-semibold">Student Tracker</h2>
