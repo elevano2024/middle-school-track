@@ -18,8 +18,13 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   onUpdateTaskStatus,
   getTasksForStudent
 }) => {
+  console.log('FleetBoard props:', { students, subjects, tasks });
+
   const getTasksForStudentAndSubject = (studentId: string, subject: string): Task[] => {
-    return tasks.filter(task => task.studentId === studentId && task.subject === subject);
+    const studentTasks = tasks.filter(task => task.studentId === studentId);
+    const subjectTasks = studentTasks.filter(task => task.subject === subject);
+    console.log(`Tasks for student ${studentId} and subject ${subject}:`, subjectTasks);
+    return subjectTasks;
   };
 
   const getStudentsNeedingAttention = () => {
