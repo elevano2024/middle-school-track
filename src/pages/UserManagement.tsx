@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface Profile {
@@ -24,6 +25,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState<'admin' | 'teacher' | 'student' | ''>('');
+  const [resetPasswordEmail, setResetPasswordEmail] = useState('');
 
   useEffect(() => {
     fetchProfiles();
@@ -100,6 +102,30 @@ const UserManagement = () => {
     }
   };
 
+  const resetUserPassword = async () => {
+    if (!resetPasswordEmail) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetPasswordEmail, {
+        redirectTo: window.location.origin + '/auth'
+      });
+
+      if (error) {
+        console.error('Error sending reset email:', error);
+        toast.error('Failed to send password reset email');
+      } else {
+        toast.success('Password reset email sent successfully');
+        setResetPasswordEmail('');
+      }
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      toast.error('Failed to send password reset email');
+    }
+  };
+
   if (!isAdmin && !isTeacher) {
     return (
       <div className="p-6">
@@ -131,46 +157,71 @@ const UserManagement = () => {
       </div>
 
       {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assign Role</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((profile) => (
-                      <SelectItem key={profile.id} value={profile.id}>
-                        {profile.full_name} ({profile.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Assign Role</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.full_name} ({profile.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Select value={selectedRole} onValueChange={(value: 'admin' | 'teacher' | 'student') => setSelectedRole(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={assignRole} className="w-full">
+                    Assign Role
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Select value={selectedRole} onValueChange={(value: 'admin' | 'teacher' | 'student') => setSelectedRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    <SelectItem value="student">Student</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
-                <Button onClick={assignRole} className="w-full">
-                  Assign Role
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Reset User Password</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-4">
+                <Input
+                  type="email"
+                  placeholder="Enter user email"
+                  value={resetPasswordEmail}
+                  onChange={(e) => setResetPasswordEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={resetUserPassword}>
+                  Send Reset Email
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-sm text-gray-600">
+                This will send a password reset email to the user. They can use it to set a new password.
+              </p>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       <Card>
