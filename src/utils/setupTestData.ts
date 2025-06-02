@@ -12,6 +12,8 @@ export const setupStudentTestData = async () => {
       return;
     }
 
+    console.log('Current user email:', user.email);
+
     // First, let's get all subjects to create tasks for each one
     const { data: subjects, error: subjectsError } = await supabase
       .from('subjects')
@@ -33,22 +35,23 @@ export const setupStudentTestData = async () => {
 
     const userName = profile?.full_name || 'Ravi Singh';
 
-    // Check if the student user already exists in the students table
+    // Check if the student user already exists in the students table by email
     const { data: existingStudent, error: studentCheckError } = await supabase
       .from('students')
       .select('*')
-      .ilike('name', `%${userName}%`)
+      .eq('email', user.email)
       .single();
 
     let studentId;
 
     if (studentCheckError && studentCheckError.code === 'PGRST116') {
-      // Student doesn't exist, create them
-      console.log('Creating student record for:', userName);
+      // Student doesn't exist, create them with email
+      console.log('Creating student record for:', userName, 'with email:', user.email);
       const { data: newStudent, error: createStudentError } = await supabase
         .from('students')
         .insert({
           name: userName,
+          email: user.email,
           grade: '8'
         })
         .select()

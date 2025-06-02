@@ -32,14 +32,13 @@ const StudentDashboard = () => {
     );
   }
 
-  console.log('Current user:', user?.email);
-  console.log('All tasks fetched for student:', tasks);
-  console.log('User ID:', user?.id);
+  console.log('Current user email:', user?.email);
+  console.log('All tasks fetched for student dashboard:', tasks);
 
-  // Since useTasks already filters by student auth ID, we can use tasks directly
+  // Since useTasks already filters by student email, we can use tasks directly
   const studentTasks = tasks;
 
-  console.log('Student tasks:', studentTasks);
+  console.log('Student tasks filtered by email:', studentTasks);
 
   // Group tasks by subject
   const tasksBySubject = studentTasks.reduce((acc, task) => {
@@ -119,8 +118,9 @@ const StudentDashboard = () => {
         <CardContent className="p-4">
           <h3 className="font-semibold mb-2">Debug Info:</h3>
           <p className="text-sm">Student tasks found: {studentTasks.length}</p>
-          <p className="text-sm">User ID: {user?.id}</p>
-          <p className="text-sm">Tasks linked to auth ID: {studentTasks.length > 0 ? 'Yes' : 'No'}</p>
+          <p className="text-sm">User email: {user?.email}</p>
+          <p className="text-sm">Tasks fetched using email-based lookup: {studentTasks.length > 0 ? 'Yes' : 'No'}</p>
+          <p className="text-sm">System now uses email as unique identifier for data fetching</p>
         </CardContent>
       </Card>
 
@@ -131,6 +131,9 @@ const StudentDashboard = () => {
             <p className="text-gray-500">No tasks assigned yet. Check back later!</p>
             <p className="text-sm text-gray-400 mt-2">
               If you should have tasks, try refreshing the page or contact your teacher.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              The system is now using your email ({user?.email}) to fetch your specific tasks.
             </p>
           </CardContent>
         </Card>
