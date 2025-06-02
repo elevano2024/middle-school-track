@@ -43,7 +43,7 @@ export const useTasks = () => {
         .from('tasks')
         .select(`
           *,
-          students!inner(name, email),
+          students(name, email),
           subjects(name)
         `);
 
@@ -51,8 +51,22 @@ export const useTasks = () => {
       if (isStudent && !isAdmin && !isTeacher) {
         console.log('Fetching tasks for student with email:', user.email);
         
-        // Filter by student email directly in the query
-        query = query.eq('students.email', user.email);
+        // First get the student ID by email
+        const { data: studentData, error: studentError } = await supabase
+          .from('students')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (studentError || !studentData) {
+          console.log('No student record found for email:', user.email);
+          setTasks([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Found student record with ID:', studentData.id);
+        query = query.eq('student_id', studentData.id);
       }
 
       query = query.order('created_at', { ascending: false });

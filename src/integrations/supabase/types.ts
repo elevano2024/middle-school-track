@@ -36,6 +36,7 @@ export type Database = {
       students: {
         Row: {
           created_at: string
+          email: string | null
           grade: Database["public"]["Enums"]["grade_level"]
           id: string
           name: string
@@ -43,6 +44,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           grade: Database["public"]["Enums"]["grade_level"]
           id?: string
           name: string
@@ -50,6 +52,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           grade?: Database["public"]["Enums"]["grade_level"]
           id?: string
           name?: string
