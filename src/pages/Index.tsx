@@ -74,10 +74,23 @@ const Index = () => {
   const subjectNames = subjects.map(subject => subject.name);
 
   const transformedTasks = tasks.map(task => {
-    console.log('Transforming task:', task);
-    // Fix: access subject (from the joined subjects table)
-    const subjectName = task.subject?.name || '';
-    console.log('Subject name for task:', subjectName);
+    console.log('Raw task data:', task);
+    
+    // The subject data comes from the join and might be nested differently
+    // Let's try multiple ways to access it
+    let subjectName = '';
+    
+    if (task.subject?.name) {
+      subjectName = task.subject.name;
+    } else if (task.subjects?.name) {
+      subjectName = task.subjects.name;
+    } else {
+      // If no subject name found in joined data, try to find it by subject_id
+      const subject = subjects.find(s => s.id === task.subject_id);
+      subjectName = subject?.name || '';
+    }
+    
+    console.log('Final subject name for task:', subjectName);
     
     return {
       id: task.id,
@@ -91,7 +104,7 @@ const Index = () => {
     };
   });
 
-  console.log('Transformed tasks:', transformedTasks);
+  console.log('Final transformed tasks:', transformedTasks);
 
   const getTasksForStudent = (studentId: string) => {
     return transformedTasks.filter(task => task.studentId === studentId);

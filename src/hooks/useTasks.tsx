@@ -18,7 +18,7 @@ export interface Task {
   students?: {
     name: string;
   };
-  subject?: {
+  subjects?: {
     name: string;
   };
 }
@@ -49,7 +49,7 @@ export const useTasks = () => {
       if (error) {
         console.error('Error fetching tasks:', error);
       } else {
-        console.log('Fetched tasks:', data);
+        console.log('Raw fetched tasks from Supabase:', data);
         setTasks(data || []);
       }
     } catch (error) {
