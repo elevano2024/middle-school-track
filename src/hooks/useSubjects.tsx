@@ -15,6 +15,7 @@ class SubjectsChannelManager {
   private subscribers: Set<() => void> = new Set();
   private isSubscribed = false;
   private isSubscribing = false;
+  private subscriptionPromise: Promise<void> | null = null;
 
   static getInstance(): SubjectsChannelManager {
     if (!SubjectsChannelManager.instance) {
@@ -33,12 +34,10 @@ class SubjectsChannelManager {
       return;
     }
 
-    // If currently subscribing, wait for it to complete
-    if (this.isSubscribing) {
+    // If currently subscribing, wait for the existing subscription to complete
+    if (this.isSubscribing && this.subscriptionPromise) {
       console.log('useSubjects: Subscription in progress, waiting...');
-      while (this.isSubscribing) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
+      await this.subscriptionPromise;
       return;
     }
 
@@ -46,46 +45,63 @@ class SubjectsChannelManager {
     this.isSubscribing = true;
     console.log('useSubjects: Creating and subscribing to new subjects channel');
 
+    // Create the subscription promise
+    this.subscriptionPromise = this.createSubscription();
+    
     try {
-      // Create a unique channel name
-      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
-      this.channel = supabase.channel(channelName);
-      
-      // Set up the channel with event handlers
-      this.channel.on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'subjects' 
-      }, (payload) => {
-        console.log('useSubjects: Database change detected, notifying subscribers...', payload);
-        this.subscribers.forEach(callback => {
-          try {
-            callback();
-          } catch (error) {
-            console.error('Error calling subjects callback:', error);
-          }
-        });
-      });
+      await this.subscriptionPromise;
+    } catch (error) {
+      console.error('Error in subscription:', error);
+      this.isSubscribing = false;
+      this.isSubscribed = false;
+      this.subscriptionPromise = null;
+    }
+  }
 
-      // Subscribe to the channel (this should only happen once per channel instance)
-      await new Promise<void>((resolve, reject) => {
+  private async createSubscription(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // Create a unique channel name
+        const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+        this.channel = supabase.channel(channelName);
+        
+        // Set up the channel with event handlers
+        this.channel.on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'subjects' 
+        }, (payload) => {
+          console.log('useSubjects: Database change detected, notifying subscribers...', payload);
+          this.subscribers.forEach(callback => {
+            try {
+              callback();
+            } catch (error) {
+              console.error('Error calling subjects callback:', error);
+            }
+          });
+        });
+
+        // Subscribe to the channel (this should only happen once per channel instance)
         this.channel.subscribe((status) => {
           console.log('useSubjects: Channel subscription status:', status);
           if (status === 'SUBSCRIBED') {
             this.isSubscribed = true;
             this.isSubscribing = false;
+            this.subscriptionPromise = null;
             resolve();
           } else if (status === 'CHANNEL_ERROR') {
             this.isSubscribing = false;
+            this.subscriptionPromise = null;
             reject(new Error('Channel subscription failed'));
           }
+          // Note: We don't handle 'CLOSED' here as it's handled in unsubscribe
         });
-      });
-    } catch (error) {
-      console.error('Error creating subjects channel:', error);
-      this.isSubscribing = false;
-      this.isSubscribed = false;
-    }
+      } catch (error) {
+        this.isSubscribing = false;
+        this.subscriptionPromise = null;
+        reject(error);
+      }
+    });
   }
 
   unsubscribe(callback: () => void): void {
@@ -103,6 +119,7 @@ class SubjectsChannelManager {
       this.channel = null;
       this.isSubscribed = false;
       this.isSubscribing = false;
+      this.subscriptionPromise = null;
     }
   }
 }

@@ -10,6 +10,7 @@ class TasksChannelManager {
   private updatingTasksRefs: Set<React.MutableRefObject<Set<string>>> = new Set();
   private isSubscribed = false;
   private isSubscribing = false;
+  private subscriptionPromise: Promise<void> | null = null;
 
   static getInstance(): TasksChannelManager {
     if (!TasksChannelManager.instance) {
@@ -29,12 +30,10 @@ class TasksChannelManager {
       return;
     }
 
-    // If currently subscribing, wait for it to complete
-    if (this.isSubscribing) {
+    // If currently subscribing, wait for the existing subscription to complete
+    if (this.isSubscribing && this.subscriptionPromise) {
       console.log('useTasksRealtime: Subscription in progress, waiting...');
-      while (this.isSubscribing) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
+      await this.subscriptionPromise;
       return;
     }
 
@@ -42,65 +41,81 @@ class TasksChannelManager {
     this.isSubscribing = true;
     console.log('useTasksRealtime: Creating and subscribing to new tasks channel');
 
+    // Create the subscription promise
+    this.subscriptionPromise = this.createSubscription();
+    
     try {
-      // Create a unique channel name
-      const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
-      this.channel = supabase.channel(channelName);
-      
-      // Set up the channel with event handlers
-      this.channel.on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'tasks' 
-      }, (payload) => {
-        console.log('useTasksRealtime: Database change detected via real-time:', payload);
+      await this.subscriptionPromise;
+    } catch (error) {
+      console.error('Error in tasks subscription:', error);
+      this.isSubscribing = false;
+      this.isSubscribed = false;
+      this.subscriptionPromise = null;
+    }
+  }
+
+  private async createSubscription(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // Create a unique channel name
+        const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
+        this.channel = supabase.channel(channelName);
         
-        // Check if any subscriber is updating this task
-        const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
-        let shouldSkip = false;
-        
-        if (taskId) {
-          for (const updatingTasksRef of this.updatingTasksRefs) {
-            if (updatingTasksRef.current.has(taskId)) {
-              shouldSkip = true;
-              break;
+        // Set up the channel with event handlers
+        this.channel.on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tasks' 
+        }, (payload) => {
+          console.log('useTasksRealtime: Database change detected via real-time:', payload);
+          
+          // Check if any subscriber is updating this task
+          const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
+          let shouldSkip = false;
+          
+          if (taskId) {
+            for (const updatingTasksRef of this.updatingTasksRefs) {
+              if (updatingTasksRef.current.has(taskId)) {
+                shouldSkip = true;
+                break;
+              }
             }
           }
-        }
-        
-        if (!shouldSkip) {
-          console.log('useTasksRealtime: Notifying all subscribers of external change');
-          this.subscribers.forEach(callback => {
-            try {
-              callback();
-            } catch (error) {
-              console.error('Error calling task callback:', error);
-            }
-          });
-        } else {
-          console.log('useTasksRealtime: Skipping refetch for self-initiated update');
-        }
-      });
+          
+          if (!shouldSkip) {
+            console.log('useTasksRealtime: Notifying all subscribers of external change');
+            this.subscribers.forEach(callback => {
+              try {
+                callback();
+              } catch (error) {
+                console.error('Error calling task callback:', error);
+              }
+            });
+          } else {
+            console.log('useTasksRealtime: Skipping refetch for self-initiated update');
+          }
+        });
 
-      // Subscribe to the channel (this should only happen once per channel instance)
-      await new Promise<void>((resolve, reject) => {
+        // Subscribe to the channel (this should only happen once per channel instance)
         this.channel.subscribe((status) => {
           console.log('useTasksRealtime: Channel subscription status:', status);
           if (status === 'SUBSCRIBED') {
             this.isSubscribed = true;
             this.isSubscribing = false;
+            this.subscriptionPromise = null;
             resolve();
           } else if (status === 'CHANNEL_ERROR') {
             this.isSubscribing = false;
+            this.subscriptionPromise = null;
             reject(new Error('Channel subscription failed'));
           }
         });
-      });
-    } catch (error) {
-      console.error('Error creating tasks channel:', error);
-      this.isSubscribing = false;
-      this.isSubscribed = false;
-    }
+      } catch (error) {
+        this.isSubscribing = false;
+        this.subscriptionPromise = null;
+        reject(error);
+      }
+    });
   }
 
   unsubscribe(callback: () => void, updatingTasksRef: React.MutableRefObject<Set<string>>): void {
@@ -119,6 +134,7 @@ class TasksChannelManager {
       this.channel = null;
       this.isSubscribed = false;
       this.isSubscribing = false;
+      this.subscriptionPromise = null;
     }
   }
 }
