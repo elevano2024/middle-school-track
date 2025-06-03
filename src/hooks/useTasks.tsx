@@ -32,7 +32,7 @@ export const useTasks = () => {
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const channelRef = useRef<any>(null);
   const updatingTasksRef = useRef<Set<string>>(new Set());
-  const hasSubscribedRef = useRef(false);
+  const isSubscribedRef = useRef(false);
 
   const fetchTasks = async () => {
     if (!user) {
@@ -121,20 +121,9 @@ export const useTasks = () => {
     if (!user) return;
 
     // Prevent duplicate subscriptions
-    if (hasSubscribedRef.current) {
-      console.log('useTasks: Already subscribed, skipping');
+    if (isSubscribedRef.current || channelRef.current) {
+      console.log('useTasks: Already subscribed or channel exists, skipping');
       return;
-    }
-
-    // Clean up any existing channel first
-    if (channelRef.current) {
-      console.log('Removing existing channel before creating new one');
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.log('Error removing channel:', error);
-      }
-      channelRef.current = null;
     }
 
     // Create new channel with a unique name to avoid conflicts
@@ -142,6 +131,7 @@ export const useTasks = () => {
     console.log('Creating new channel:', channelName);
     
     const channel = supabase.channel(channelName);
+    channelRef.current = channel;
     
     channel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
@@ -159,17 +149,15 @@ export const useTasks = () => {
       .subscribe((status) => {
         console.log('Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          hasSubscribedRef.current = true;
+          isSubscribedRef.current = true;
         } else if (status === 'CLOSED') {
-          hasSubscribedRef.current = false;
+          isSubscribedRef.current = false;
         }
       });
 
-    channelRef.current = channel;
-
     return () => {
       console.log('Cleaning up channel on unmount');
-      hasSubscribedRef.current = false;
+      isSubscribedRef.current = false;
       if (channelRef.current) {
         try {
           supabase.removeChannel(channelRef.current);
