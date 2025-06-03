@@ -6,6 +6,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate } from 'react-router-dom';
 import { AddSubjectForm } from '@/components/AddSubjectForm';
 import { AddTaskForm } from '@/components/AddTaskForm';
+import { SubjectsList } from '@/components/SubjectsList';
 import { BookOpen, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -40,7 +41,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
+    <div className="container mx-auto py-6 max-w-6xl">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="h-8 w-8 text-blue-600" />
@@ -61,7 +62,7 @@ const Settings = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="subjects" className="mt-6">
+        <TabsContent value="subjects" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-xl text-blue-700">Add New Subject Area</CardTitle>
@@ -73,6 +74,8 @@ const Settings = () => {
               <AddSubjectForm onSubjectCreated={handleSubjectCreated} />
             </CardContent>
           </Card>
+
+          <SubjectsList />
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-6">
