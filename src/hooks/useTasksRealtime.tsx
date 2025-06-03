@@ -2,9 +2,11 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Global channel reference to prevent multiple subscriptions
+// Global channel management
 let globalTasksChannel: any = null;
 let globalTasksSubscribers = 0;
+let globalTasksCallbacks: Set<() => void> = new Set();
+let globalUpdatingTasksCallbacks: Set<React.MutableRefObject<Set<string>>> = new Set();
 
 interface UseTasksRealtimeProps {
   userId: string | undefined;
@@ -13,7 +15,14 @@ interface UseTasksRealtimeProps {
 }
 
 export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: UseTasksRealtimeProps) => {
-  const isSubscribedRef = useRef(false);
+  const callbackRef = useRef(onTasksChanged);
+  const updatingRef = useRef(updatingTasksRef);
+
+  // Update refs when props change
+  useEffect(() => {
+    callbackRef.current = onTasksChanged;
+    updatingRef.current = updatingTasksRef;
+  }, [onTasksChanged, updatingTasksRef]);
 
   useEffect(() => {
     if (!userId) return;
@@ -22,10 +31,14 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
     globalTasksSubscribers++;
     console.log('useTasksRealtime: Subscriber count:', globalTasksSubscribers);
 
-    // Only create channel if it doesn't exist
+    // Add this callback to the global set
+    globalTasksCallbacks.add(callbackRef.current);
+    globalUpdatingTasksCallbacks.add(updatingRef.current);
+
+    // Only create and subscribe to channel if it doesn't exist
     if (!globalTasksChannel) {
-      const channelName = `tasks-changes-${userId}-${Date.now()}-${Math.random()}`;
-      console.log('Creating new channel:', channelName);
+      const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
+      console.log('Creating and subscribing to new tasks channel:', channelName);
       
       globalTasksChannel = supabase.channel(channelName);
       
@@ -33,20 +46,38 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
           console.log('Tasks data changed via real-time:', payload);
           
-          // Only refetch if this wasn't an update we initiated
+          // Check if any subscriber is updating this task
           const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
-          if (taskId && !updatingTasksRef.current.has(taskId)) {
-            console.log('Refetching tasks due to external change');
-            onTasksChanged();
+          let shouldSkip = false;
+          
+          if (taskId) {
+            for (const updatingTasksRef of globalUpdatingTasksCallbacks) {
+              if (updatingTasksRef.current.has(taskId)) {
+                shouldSkip = true;
+                break;
+              }
+            }
+          }
+          
+          if (!shouldSkip) {
+            console.log('Notifying all task subscribers of external change');
+            // Notify all subscribers
+            globalTasksCallbacks.forEach(callback => {
+              try {
+                callback();
+              } catch (error) {
+                console.error('Error calling task callback:', error);
+              }
+            });
           } else {
             console.log('Skipping refetch for self-initiated update');
           }
         })
         .subscribe((status) => {
-          console.log('Channel subscription status:', status);
+          console.log('Tasks channel subscription status:', status);
         });
-      
-      isSubscribedRef.current = true;
+    } else {
+      console.log('Using existing tasks channel');
     }
 
     return () => {
@@ -54,18 +85,23 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
       globalTasksSubscribers--;
       console.log('useTasksRealtime: Cleaning up, remaining subscribers:', globalTasksSubscribers);
       
+      // Remove this callback from the global set
+      globalTasksCallbacks.delete(callbackRef.current);
+      globalUpdatingTasksCallbacks.delete(updatingRef.current);
+      
       // Only clean up the channel when no more subscribers
       if (globalTasksSubscribers <= 0 && globalTasksChannel) {
         console.log('Cleaning up global tasks channel');
         try {
           supabase.removeChannel(globalTasksChannel);
         } catch (error) {
-          console.log('Error cleaning up channel:', error);
+          console.log('Error cleaning up tasks channel:', error);
         }
         globalTasksChannel = null;
-        isSubscribedRef.current = false;
-        globalTasksSubscribers = 0; // Reset to 0 to be safe
+        globalTasksSubscribers = 0;
+        globalTasksCallbacks.clear();
+        globalUpdatingTasksCallbacks.clear();
       }
     };
-  }, [userId, onTasksChanged, updatingTasksRef]);
+  }, [userId]);
 };
