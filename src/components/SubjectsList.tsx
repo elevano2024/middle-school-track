@@ -69,38 +69,40 @@ export const SubjectsList = () => {
             {subjects.map((subject) => (
               <div
                 key={subject.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: '#3B82F6' }}
-                  />
-                  <span className="font-medium text-gray-900 truncate">{subject.name}</span>
-                  <Badge variant="secondary" className="text-xs ml-auto">
-                    {new Date(subject.created_at).toLocaleDateString()}
-                  </Badge>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: '#3B82F6' }}
+                    />
+                    <span className="font-medium text-gray-900 text-sm">{subject.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingSubject(subject)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Edit className="h-3 w-3" />
+                      <span className="sr-only">Edit subject</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeletingSubject(subject)}
+                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span className="sr-only">Delete subject</span>
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 ml-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingSubject(subject)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span className="sr-only">Edit subject</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeletingSubject(subject)}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Delete subject</span>
-                  </Button>
-                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {new Date(subject.created_at).toLocaleDateString()}
+                </Badge>
               </div>
             ))}
           </div>
