@@ -32,6 +32,7 @@ export const useTasks = () => {
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const channelRef = useRef<any>(null);
   const updatingTasksRef = useRef<Set<string>>(new Set());
+  const isSubscribedRef = useRef(false);
 
   const fetchTasks = async () => {
     if (!user) {
@@ -128,31 +129,38 @@ export const useTasks = () => {
         console.log('Error removing channel:', error);
       }
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
-    // Create new channel with a unique name to avoid conflicts
-    const channelName = `tasks-changes-${user.id}-${Date.now()}`;
-    console.log('Creating new channel:', channelName);
-    
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-        console.log('Tasks data changed via real-time:', payload);
-        
-        // Only refetch if this wasn't an update we initiated
-        const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
-        if (taskId && !updatingTasksRef.current.has(taskId)) {
-          console.log('Refetching tasks due to external change');
-          fetchTasks();
-        } else {
-          console.log('Skipping refetch for self-initiated update');
-        }
-      })
-      .subscribe((status) => {
-        console.log('Channel subscription status:', status);
-      });
+    // Only create a new channel if we don't already have one subscribed
+    if (!isSubscribedRef.current) {
+      // Create new channel with a unique name to avoid conflicts
+      const channelName = `tasks-changes-${user.id}-${Date.now()}-${Math.random()}`;
+      console.log('Creating new channel:', channelName);
+      
+      const channel = supabase
+        .channel(channelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+          console.log('Tasks data changed via real-time:', payload);
+          
+          // Only refetch if this wasn't an update we initiated
+          const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
+          if (taskId && !updatingTasksRef.current.has(taskId)) {
+            console.log('Refetching tasks due to external change');
+            fetchTasks();
+          } else {
+            console.log('Skipping refetch for self-initiated update');
+          }
+        })
+        .subscribe((status) => {
+          console.log('Channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            isSubscribedRef.current = true;
+          }
+        });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    }
 
     return () => {
       if (channelRef.current) {
@@ -163,6 +171,7 @@ export const useTasks = () => {
           console.log('Error cleaning up channel:', error);
         }
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [user?.id]);

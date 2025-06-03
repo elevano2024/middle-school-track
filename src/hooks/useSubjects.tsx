@@ -12,6 +12,7 @@ export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchSubjects = async () => {
     try {
@@ -49,30 +50,46 @@ export const useSubjects = () => {
     // Clean up existing channel if it exists
     if (channelRef.current) {
       console.log('useSubjects: Removing existing subjects channel');
-      supabase.removeChannel(channelRef.current);
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.log('useSubjects: Error removing channel:', error);
+      }
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
-    const channelName = `subjects-changes-${Date.now()}`;
-    console.log('useSubjects: Setting up real-time channel:', channelName);
-    
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-        console.log('useSubjects: Subjects data changed, refetching...', payload);
-        fetchSubjects();
-      })
-      .subscribe((status) => {
-        console.log('useSubjects: Channel subscription status:', status);
-      });
+    // Only create a new channel if we don't already have one subscribed
+    if (!isSubscribedRef.current) {
+      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+      console.log('useSubjects: Setting up real-time channel:', channelName);
+      
+      const channel = supabase
+        .channel(channelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
+          console.log('useSubjects: Subjects data changed, refetching...', payload);
+          fetchSubjects();
+        })
+        .subscribe((status) => {
+          console.log('useSubjects: Channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            isSubscribedRef.current = true;
+          }
+        });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    }
 
     return () => {
       if (channelRef.current) {
         console.log('useSubjects: Cleaning up subjects channel');
-        supabase.removeChannel(channelRef.current);
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.log('useSubjects: Error cleaning up channel:', error);
+        }
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, []);
