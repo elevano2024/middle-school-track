@@ -12,7 +12,7 @@ export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const hasSubscribedRef = useRef(false);
 
   const fetchSubjects = async () => {
     try {
@@ -47,7 +47,13 @@ export const useSubjects = () => {
 
   // Set up real-time subscription for subjects changes
   useEffect(() => {
-    // Clean up existing channel if it exists
+    // Prevent duplicate subscriptions
+    if (hasSubscribedRef.current) {
+      console.log('useSubjects: Already subscribed, skipping');
+      return;
+    }
+
+    // Clean up any existing channel first
     if (channelRef.current) {
       console.log('useSubjects: Removing existing subjects channel');
       try {
@@ -56,43 +62,42 @@ export const useSubjects = () => {
         console.log('useSubjects: Error removing channel:', error);
       }
       channelRef.current = null;
-      isSubscribedRef.current = false;
     }
 
-    // Only create a new channel if we don't already have one subscribed
-    if (!isSubscribedRef.current) {
-      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
-      console.log('useSubjects: Setting up real-time channel:', channelName);
-      
-      const channel = supabase
-        .channel(channelName)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-          console.log('useSubjects: Subjects data changed, refetching...', payload);
-          fetchSubjects();
-        })
-        .subscribe((status) => {
-          console.log('useSubjects: Channel subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            isSubscribedRef.current = true;
-          }
-        });
+    const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+    console.log('useSubjects: Setting up real-time channel:', channelName);
+    
+    const channel = supabase.channel(channelName);
+    
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
+        console.log('useSubjects: Subjects data changed, refetching...', payload);
+        fetchSubjects();
+      })
+      .subscribe((status) => {
+        console.log('useSubjects: Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          hasSubscribedRef.current = true;
+        } else if (status === 'CLOSED') {
+          hasSubscribedRef.current = false;
+        }
+      });
 
-      channelRef.current = channel;
-    }
+    channelRef.current = channel;
 
     return () => {
+      console.log('useSubjects: Cleaning up subjects channel');
+      hasSubscribedRef.current = false;
       if (channelRef.current) {
-        console.log('useSubjects: Cleaning up subjects channel');
         try {
           supabase.removeChannel(channelRef.current);
         } catch (error) {
           console.log('useSubjects: Error cleaning up channel:', error);
         }
         channelRef.current = null;
-        isSubscribedRef.current = false;
       }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   return { subjects, loading, refetch: fetchSubjects };
 };
