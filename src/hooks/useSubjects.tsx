@@ -62,6 +62,9 @@ export const useSubjects = () => {
     
     const channel = supabase.channel(channelName);
     
+    // Set the channel reference BEFORE subscribing
+    channelRef.current = channel;
+    
     channel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
         console.log('useSubjects: Subjects data changed, refetching...', payload);
@@ -70,8 +73,6 @@ export const useSubjects = () => {
       .subscribe((status) => {
         console.log('useSubjects: Channel subscription status:', status);
       });
-
-    channelRef.current = channel;
 
     return () => {
       console.log('useSubjects: Cleaning up subjects channel');

@@ -136,6 +136,9 @@ export const useTasks = () => {
     
     const channel = supabase.channel(channelName);
     
+    // Set the channel reference BEFORE subscribing
+    channelRef.current = channel;
+    
     channel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
         console.log('Tasks data changed via real-time:', payload);
@@ -152,8 +155,6 @@ export const useTasks = () => {
       .subscribe((status) => {
         console.log('Channel subscription status:', status);
       });
-
-    channelRef.current = channel;
 
     return () => {
       console.log('Cleaning up channel on unmount');
