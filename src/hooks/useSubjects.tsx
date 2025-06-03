@@ -12,6 +12,7 @@ export interface Subject {
 let globalSubjectsChannel: any = null;
 let globalSubjectsSubscribers = 0;
 let globalSubjectsCallbacks: Set<() => void> = new Set();
+let globalSubjectsChannelPromise: Promise<any> | null = null;
 
 export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -63,31 +64,45 @@ export const useSubjects = () => {
       globalSubjectsCallbacks.add(callbackRef.current);
     }
 
-    // Only create and subscribe to channel if it doesn't exist
-    if (!globalSubjectsChannel) {
-      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
-      console.log('useSubjects: Creating and subscribing to new subjects channel:', channelName);
-      
-      globalSubjectsChannel = supabase.channel(channelName);
-      
-      globalSubjectsChannel
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-          console.log('useSubjects: Subjects data changed, notifying all subscribers...', payload);
-          // Notify all subscribers
-          globalSubjectsCallbacks.forEach(callback => {
-            try {
-              callback();
-            } catch (error) {
-              console.error('Error calling subjects callback:', error);
-            }
-          });
-        })
-        .subscribe((status) => {
-          console.log('useSubjects: Channel subscription status:', status);
+    // Create and subscribe to channel if it doesn't exist, preventing race conditions
+    const setupChannel = async () => {
+      if (!globalSubjectsChannel && !globalSubjectsChannelPromise) {
+        const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+        console.log('useSubjects: Creating and subscribing to new subjects channel:', channelName);
+        
+        globalSubjectsChannelPromise = new Promise((resolve) => {
+          globalSubjectsChannel = supabase.channel(channelName);
+          
+          globalSubjectsChannel
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
+              console.log('useSubjects: Subjects data changed, notifying all subscribers...', payload);
+              // Notify all subscribers
+              globalSubjectsCallbacks.forEach(callback => {
+                try {
+                  callback();
+                } catch (error) {
+                  console.error('Error calling subjects callback:', error);
+                }
+              });
+            })
+            .subscribe((status) => {
+              console.log('useSubjects: Channel subscription status:', status);
+              resolve(globalSubjectsChannel);
+            });
         });
-    } else {
-      console.log('useSubjects: Using existing subjects channel');
-    }
+        
+        await globalSubjectsChannelPromise;
+        globalSubjectsChannelPromise = null;
+      } else if (globalSubjectsChannelPromise) {
+        // Wait for existing channel creation to complete
+        await globalSubjectsChannelPromise;
+        console.log('useSubjects: Using existing subjects channel');
+      } else {
+        console.log('useSubjects: Using existing subjects channel');
+      }
+    };
+
+    setupChannel();
 
     return () => {
       // Decrement subscriber count
@@ -110,6 +125,7 @@ export const useSubjects = () => {
         globalSubjectsChannel = null;
         globalSubjectsSubscribers = 0;
         globalSubjectsCallbacks.clear();
+        globalSubjectsChannelPromise = null;
       }
     };
   }, []);

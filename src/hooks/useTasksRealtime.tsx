@@ -7,6 +7,7 @@ let globalTasksChannel: any = null;
 let globalTasksSubscribers = 0;
 let globalTasksCallbacks: Set<() => void> = new Set();
 let globalUpdatingTasksCallbacks: Set<React.MutableRefObject<Set<string>>> = new Set();
+let globalTasksChannelPromise: Promise<any> | null = null;
 
 interface UseTasksRealtimeProps {
   userId: string | undefined;
@@ -35,50 +36,64 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
     globalTasksCallbacks.add(callbackRef.current);
     globalUpdatingTasksCallbacks.add(updatingRef.current);
 
-    // Only create and subscribe to channel if it doesn't exist
-    if (!globalTasksChannel) {
-      const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
-      console.log('Creating and subscribing to new tasks channel:', channelName);
-      
-      globalTasksChannel = supabase.channel(channelName);
-      
-      globalTasksChannel
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-          console.log('Tasks data changed via real-time:', payload);
+    // Create and subscribe to channel if it doesn't exist, preventing race conditions
+    const setupChannel = async () => {
+      if (!globalTasksChannel && !globalTasksChannelPromise) {
+        const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
+        console.log('Creating and subscribing to new tasks channel:', channelName);
+        
+        globalTasksChannelPromise = new Promise((resolve) => {
+          globalTasksChannel = supabase.channel(channelName);
           
-          // Check if any subscriber is updating this task
-          const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
-          let shouldSkip = false;
-          
-          if (taskId) {
-            for (const updatingTasksRef of globalUpdatingTasksCallbacks) {
-              if (updatingTasksRef.current.has(taskId)) {
-                shouldSkip = true;
-                break;
+          globalTasksChannel
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+              console.log('Tasks data changed via real-time:', payload);
+              
+              // Check if any subscriber is updating this task
+              const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
+              let shouldSkip = false;
+              
+              if (taskId) {
+                for (const updatingTasksRef of globalUpdatingTasksCallbacks) {
+                  if (updatingTasksRef.current.has(taskId)) {
+                    shouldSkip = true;
+                    break;
+                  }
+                }
               }
-            }
-          }
-          
-          if (!shouldSkip) {
-            console.log('Notifying all task subscribers of external change');
-            // Notify all subscribers
-            globalTasksCallbacks.forEach(callback => {
-              try {
-                callback();
-              } catch (error) {
-                console.error('Error calling task callback:', error);
+              
+              if (!shouldSkip) {
+                console.log('Notifying all task subscribers of external change');
+                // Notify all subscribers
+                globalTasksCallbacks.forEach(callback => {
+                  try {
+                    callback();
+                  } catch (error) {
+                    console.error('Error calling task callback:', error);
+                  }
+                });
+              } else {
+                console.log('Skipping refetch for self-initiated update');
               }
+            })
+            .subscribe((status) => {
+              console.log('Tasks channel subscription status:', status);
+              resolve(globalTasksChannel);
             });
-          } else {
-            console.log('Skipping refetch for self-initiated update');
-          }
-        })
-        .subscribe((status) => {
-          console.log('Tasks channel subscription status:', status);
         });
-    } else {
-      console.log('Using existing tasks channel');
-    }
+        
+        await globalTasksChannelPromise;
+        globalTasksChannelPromise = null;
+      } else if (globalTasksChannelPromise) {
+        // Wait for existing channel creation to complete
+        await globalTasksChannelPromise;
+        console.log('Using existing tasks channel');
+      } else {
+        console.log('Using existing tasks channel');
+      }
+    };
+
+    setupChannel();
 
     return () => {
       // Decrement subscriber count
@@ -101,6 +116,7 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
         globalTasksSubscribers = 0;
         globalTasksCallbacks.clear();
         globalUpdatingTasksCallbacks.clear();
+        globalTasksChannelPromise = null;
       }
     };
   }, [userId]);
