@@ -1,32 +1,11 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
-import { TaskStatus } from '@/types/workflow';
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  student_id: string;
-  subject_id: string;
-  status: TaskStatus;
-  time_in_status: number | null;
-  created_at: string;
-  updated_at: string;
-  students?: {
-    name: string;
-    email?: string;
-  } | null;
-  subjects?: {
-    name: string;
-  } | null;
-}
-
-// Global channel reference to prevent multiple subscriptions
-let globalTasksChannel: any = null;
-let globalTasksSubscribers = 0;
+import { useTasksRealtime } from '@/hooks/useTasksRealtime';
+import { fetchTasksFromDatabase } from '@/utils/taskApi';
+import { TaskStatusManager } from '@/utils/taskStatusManager';
+import { Task, TaskStatus } from '@/types/task';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -34,10 +13,8 @@ export const useTasks = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
-  const updatingTasksRef = useRef<Set<string>>(new Set());
-  const isSubscribedRef = useRef(false);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     if (!user) {
       console.log('No user found, skipping task fetch');
       setLoading(false);
@@ -45,60 +22,9 @@ export const useTasks = () => {
     }
 
     try {
-      console.log('=== FETCHING TASKS ===');
-      console.log('User ID:', user.id);
-      console.log('User roles:', { isAdmin, isTeacher, isStudent });
       setError(null);
-      
-      // Build the tasks query with proper joins
-      let query = supabase
-        .from('tasks')
-        .select(`
-          *,
-          students(name, email),
-          subjects(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      // Filter by student ID if the user is a student (but not admin/teacher)
-      if (isStudent && !isAdmin && !isTeacher) {
-        console.log('Filtering tasks for student with ID:', user.id);
-        query = query.eq('student_id', user.id);
-      }
-
-      const { data: tasksData, error: fetchError } = await query;
-
-      if (fetchError) {
-        console.error('Error fetching tasks:', fetchError);
-        setError('Failed to fetch tasks');
-        return;
-      }
-
-      console.log('Successfully fetched tasks with subjects:', tasksData);
-
-      if (!tasksData || tasksData.length === 0) {
-        console.log('No tasks found');
-        setTasks([]);
-        return;
-      }
-
-      // Verify that subjects are properly joined
-      const tasksWithSubjectNames = tasksData.filter(task => task.subjects?.name);
-      const tasksWithoutSubjectNames = tasksData.filter(task => !task.subjects?.name);
-      
-      console.log('Tasks with subject names:', tasksWithSubjectNames.length);
-      console.log('Tasks without subject names:', tasksWithoutSubjectNames.length);
-      
-      if (tasksWithoutSubjectNames.length > 0) {
-        console.log('Tasks missing subject data:', tasksWithoutSubjectNames.map(t => ({ 
-          id: t.id, 
-          title: t.title,
-          subject_id: t.subject_id
-        })));
-      }
-      
+      const tasksData = await fetchTasksFromDatabase(user.id, isStudent, isAdmin, isTeacher);
       setTasks(tasksData);
-
     } catch (error) {
       console.error('Error in fetchTasks:', error);
       setError('Failed to fetch tasks');
@@ -106,7 +32,10 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isAdmin, isTeacher, isStudent]);
+
+  // Create task status manager instance
+  const taskStatusManager = new TaskStatusManager(setTasks, fetchTasks);
 
   useEffect(() => {
     console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent }, 'roleLoading:', roleLoading);
@@ -117,113 +46,21 @@ export const useTasks = () => {
     } else if (!user) {
       setLoading(false);
     }
-  }, [user, isAdmin, isTeacher, isStudent, roleLoading]);
+  }, [user, isAdmin, isTeacher, isStudent, roleLoading, fetchTasks]);
 
-  // Set up real-time subscription only if user exists
-  useEffect(() => {
-    if (!user) return;
+  // Set up real-time subscription
+  useTasksRealtime({
+    userId: user?.id,
+    onTasksChanged: fetchTasks,
+    updatingTasksRef: taskStatusManager.getUpdatingTasksRef()
+  });
 
-    // Increment subscriber count
-    globalTasksSubscribers++;
-    console.log('useTasks: Subscriber count:', globalTasksSubscribers);
-
-    // Only create channel if it doesn't exist
-    if (!globalTasksChannel) {
-      const channelName = `tasks-changes-${user.id}-${Date.now()}-${Math.random()}`;
-      console.log('Creating new channel:', channelName);
-      
-      globalTasksChannel = supabase.channel(channelName);
-      
-      globalTasksChannel
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-          console.log('Tasks data changed via real-time:', payload);
-          
-          // Only refetch if this wasn't an update we initiated
-          const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
-          if (taskId && !updatingTasksRef.current.has(taskId)) {
-            console.log('Refetching tasks due to external change');
-            fetchTasks();
-          } else {
-            console.log('Skipping refetch for self-initiated update');
-          }
-        })
-        .subscribe((status) => {
-          console.log('Channel subscription status:', status);
-        });
-      
-      isSubscribedRef.current = true;
-    }
-
-    return () => {
-      // Decrement subscriber count
-      globalTasksSubscribers--;
-      console.log('useTasks: Cleaning up, remaining subscribers:', globalTasksSubscribers);
-      
-      // Only clean up the channel when no more subscribers
-      if (globalTasksSubscribers <= 0 && globalTasksChannel) {
-        console.log('Cleaning up global tasks channel');
-        try {
-          supabase.removeChannel(globalTasksChannel);
-        } catch (error) {
-          console.log('Error cleaning up channel:', error);
-        }
-        globalTasksChannel = null;
-        isSubscribedRef.current = false;
-        globalTasksSubscribers = 0; // Reset to 0 to be safe
-      }
-    };
-  }, [user?.id]); // Only depend on user.id
-
-  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
-    // Prevent duplicate updates
-    if (updatingTasksRef.current.has(taskId)) {
-      console.log(`Task ${taskId} is already being updated, skipping`);
-      return false;
-    }
-
-    try {
-      console.log(`Updating task ${taskId} status to ${newStatus}`);
-      updatingTasksRef.current.add(taskId);
-      
-      // Optimistically update local state first for immediate UI feedback
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, status: newStatus, time_in_status: 0, updated_at: new Date().toISOString() }
-            : task
-        )
-      );
-
-      const { error } = await supabase
-        .from('tasks')
-        .update({ 
-          status: newStatus, 
-          time_in_status: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
-
-      if (error) {
-        console.error('Error updating task status:', error);
-        // Revert optimistic update on error
-        fetchTasks();
-        return false;
-      }
-
-      console.log(`Successfully updated task ${taskId} status to ${newStatus}`);
-      return true;
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      // Revert optimistic update on error
-      fetchTasks();
-      return false;
-    } finally {
-      // Remove from updating set after a brief delay to prevent race conditions
-      setTimeout(() => {
-        updatingTasksRef.current.delete(taskId);
-      }, 1000);
-    }
+  const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
+    return taskStatusManager.updateTaskStatus(taskId, newStatus);
   };
 
   return { tasks, loading, error, updateTaskStatus, refetch: fetchTasks };
 };
+
+// Re-export the Task interface for backward compatibility
+export type { Task } from '@/types/task';
