@@ -24,14 +24,18 @@ export interface Task {
   } | null;
 }
 
+// Global channel reference to prevent multiple subscriptions
+let globalTasksChannel: any = null;
+let globalTasksSubscribers = 0;
+
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
-  const channelRef = useRef<any>(null);
   const updatingTasksRef = useRef<Set<string>>(new Set());
+  const isSubscribedRef = useRef(false);
 
   const fetchTasks = async () => {
     if (!user) {
@@ -119,27 +123,18 @@ export const useTasks = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Clean up any existing channel first
-    if (channelRef.current) {
-      console.log('useTasks: Cleaning up existing channel');
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.log('useTasks: Error cleaning up existing channel:', error);
-      }
-      channelRef.current = null;
-    }
+    // Increment subscriber count
+    globalTasksSubscribers++;
+    console.log('useTasks: Subscriber count:', globalTasksSubscribers);
 
-    // Create new channel with a unique name to avoid conflicts
-    const channelName = `tasks-changes-${user.id}-${Date.now()}-${Math.random()}`;
-    console.log('Creating new channel:', channelName);
-    
-    const channel = supabase.channel(channelName);
-    channelRef.current = channel;
-    
-    // Check if channel is already subscribed before calling subscribe
-    if (channel.state !== 'joined' && channel.state !== 'joining') {
-      channel
+    // Only create channel if it doesn't exist
+    if (!globalTasksChannel) {
+      const channelName = `tasks-changes-${user.id}-${Date.now()}-${Math.random()}`;
+      console.log('Creating new channel:', channelName);
+      
+      globalTasksChannel = supabase.channel(channelName);
+      
+      globalTasksChannel
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
           console.log('Tasks data changed via real-time:', payload);
           
@@ -155,17 +150,26 @@ export const useTasks = () => {
         .subscribe((status) => {
           console.log('Channel subscription status:', status);
         });
+      
+      isSubscribedRef.current = true;
     }
 
     return () => {
-      console.log('Cleaning up channel on unmount');
-      if (channelRef.current) {
+      // Decrement subscriber count
+      globalTasksSubscribers--;
+      console.log('useTasks: Cleaning up, remaining subscribers:', globalTasksSubscribers);
+      
+      // Only clean up the channel when no more subscribers
+      if (globalTasksSubscribers <= 0 && globalTasksChannel) {
+        console.log('Cleaning up global tasks channel');
         try {
-          supabase.removeChannel(channelRef.current);
+          supabase.removeChannel(globalTasksChannel);
         } catch (error) {
           console.log('Error cleaning up channel:', error);
         }
-        channelRef.current = null;
+        globalTasksChannel = null;
+        isSubscribedRef.current = false;
+        globalTasksSubscribers = 0; // Reset to 0 to be safe
       }
     };
   }, [user?.id]); // Only depend on user.id

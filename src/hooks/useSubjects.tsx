@@ -8,10 +8,14 @@ export interface Subject {
   created_at: string;
 }
 
+// Global channel reference to prevent multiple subscriptions
+let globalSubjectsChannel: any = null;
+let globalSubjectsSubscribers = 0;
+
 export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
-  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchSubjects = async () => {
     try {
@@ -46,26 +50,18 @@ export const useSubjects = () => {
 
   // Set up real-time subscription for subjects changes
   useEffect(() => {
-    // Clean up any existing channel first
-    if (channelRef.current) {
-      console.log('useSubjects: Cleaning up existing channel');
-      try {
-        supabase.removeChannel(channelRef.current);
-      } catch (error) {
-        console.log('useSubjects: Error cleaning up existing channel:', error);
-      }
-      channelRef.current = null;
-    }
+    // Increment subscriber count
+    globalSubjectsSubscribers++;
+    console.log('useSubjects: Subscriber count:', globalSubjectsSubscribers);
 
-    const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
-    console.log('useSubjects: Setting up real-time channel:', channelName);
-    
-    const channel = supabase.channel(channelName);
-    channelRef.current = channel;
-    
-    // Check if channel is already subscribed before calling subscribe
-    if (channel.state !== 'joined' && channel.state !== 'joining') {
-      channel
+    // Only create channel if it doesn't exist
+    if (!globalSubjectsChannel) {
+      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+      console.log('useSubjects: Setting up real-time channel:', channelName);
+      
+      globalSubjectsChannel = supabase.channel(channelName);
+      
+      globalSubjectsChannel
         .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
           console.log('useSubjects: Subjects data changed, refetching...', payload);
           fetchSubjects();
@@ -73,20 +69,29 @@ export const useSubjects = () => {
         .subscribe((status) => {
           console.log('useSubjects: Channel subscription status:', status);
         });
+      
+      isSubscribedRef.current = true;
     }
 
     return () => {
-      console.log('useSubjects: Cleaning up subjects channel');
-      if (channelRef.current) {
+      // Decrement subscriber count
+      globalSubjectsSubscribers--;
+      console.log('useSubjects: Cleaning up, remaining subscribers:', globalSubjectsSubscribers);
+      
+      // Only clean up the channel when no more subscribers
+      if (globalSubjectsSubscribers <= 0 && globalSubjectsChannel) {
+        console.log('useSubjects: Cleaning up global subjects channel');
         try {
-          supabase.removeChannel(channelRef.current);
+          supabase.removeChannel(globalSubjectsChannel);
         } catch (error) {
           console.log('useSubjects: Error cleaning up channel:', error);
         }
-        channelRef.current = null;
+        globalSubjectsChannel = null;
+        isSubscribedRef.current = false;
+        globalSubjectsSubscribers = 0; // Reset to 0 to be safe
       }
     };
-  }, []); // Empty dependency array to run only once
+  }, []); // Empty dependency array to run only once per component instance
 
   return { subjects, loading, refetch: fetchSubjects };
 };
