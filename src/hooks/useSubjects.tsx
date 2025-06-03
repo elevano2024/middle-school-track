@@ -8,11 +8,81 @@ export interface Subject {
   created_at: string;
 }
 
-// Global channel management
-let globalSubjectsChannel: any = null;
-let globalSubjectsSubscribers = 0;
-let globalSubjectsCallbacks: Set<() => void> = new Set();
-let globalSubjectsChannelPromise: Promise<any> | null = null;
+// Singleton channel manager to prevent multiple subscriptions
+class SubjectsChannelManager {
+  private static instance: SubjectsChannelManager;
+  private channel: any = null;
+  private subscribers: Set<() => void> = new Set();
+  private isInitializing = false;
+
+  static getInstance(): SubjectsChannelManager {
+    if (!SubjectsChannelManager.instance) {
+      SubjectsChannelManager.instance = new SubjectsChannelManager();
+    }
+    return SubjectsChannelManager.instance;
+  }
+
+  async subscribe(callback: () => void): Promise<void> {
+    this.subscribers.add(callback);
+
+    if (this.channel) {
+      console.log('useSubjects: Using existing channel');
+      return;
+    }
+
+    if (this.isInitializing) {
+      console.log('useSubjects: Channel initialization in progress, waiting...');
+      // Wait for initialization to complete
+      while (this.isInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      return;
+    }
+
+    this.isInitializing = true;
+    console.log('useSubjects: Creating new subjects channel');
+
+    try {
+      const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
+      this.channel = supabase.channel(channelName);
+      
+      this.channel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
+          console.log('useSubjects: Subjects data changed, notifying all subscribers...', payload);
+          this.subscribers.forEach(callback => {
+            try {
+              callback();
+            } catch (error) {
+              console.error('Error calling subjects callback:', error);
+            }
+          });
+        })
+        .subscribe((status) => {
+          console.log('useSubjects: Channel subscription status:', status);
+          this.isInitializing = false;
+        });
+    } catch (error) {
+      console.error('Error creating subjects channel:', error);
+      this.isInitializing = false;
+    }
+  }
+
+  unsubscribe(callback: () => void): void {
+    this.subscribers.delete(callback);
+    console.log('useSubjects: Subscriber removed, remaining:', this.subscribers.size);
+
+    if (this.subscribers.size === 0 && this.channel) {
+      console.log('useSubjects: Cleaning up subjects channel');
+      try {
+        supabase.removeChannel(this.channel);
+      } catch (error) {
+        console.log('useSubjects: Error cleaning up channel:', error);
+      }
+      this.channel = null;
+      this.isInitializing = false;
+    }
+  }
+}
 
 export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -53,80 +123,17 @@ export const useSubjects = () => {
     fetchSubjects();
   }, []);
 
-  // Set up real-time subscription
+  // Set up real-time subscription using singleton manager
   useEffect(() => {
-    // Increment subscriber count
-    globalSubjectsSubscribers++;
-    console.log('useSubjects: Subscriber count:', globalSubjectsSubscribers);
+    if (!callbackRef.current) return;
 
-    // Add this callback to the global set
-    if (callbackRef.current) {
-      globalSubjectsCallbacks.add(callbackRef.current);
-    }
+    const manager = SubjectsChannelManager.getInstance();
+    const callback = callbackRef.current;
 
-    // Create and subscribe to channel if it doesn't exist, preventing race conditions
-    const setupChannel = async () => {
-      if (!globalSubjectsChannel && !globalSubjectsChannelPromise) {
-        const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
-        console.log('useSubjects: Creating and subscribing to new subjects channel:', channelName);
-        
-        globalSubjectsChannelPromise = new Promise((resolve) => {
-          globalSubjectsChannel = supabase.channel(channelName);
-          
-          globalSubjectsChannel
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-              console.log('useSubjects: Subjects data changed, notifying all subscribers...', payload);
-              // Notify all subscribers
-              globalSubjectsCallbacks.forEach(callback => {
-                try {
-                  callback();
-                } catch (error) {
-                  console.error('Error calling subjects callback:', error);
-                }
-              });
-            })
-            .subscribe((status) => {
-              console.log('useSubjects: Channel subscription status:', status);
-              resolve(globalSubjectsChannel);
-            });
-        });
-        
-        await globalSubjectsChannelPromise;
-        globalSubjectsChannelPromise = null;
-      } else if (globalSubjectsChannelPromise) {
-        // Wait for existing channel creation to complete
-        await globalSubjectsChannelPromise;
-        console.log('useSubjects: Using existing subjects channel');
-      } else {
-        console.log('useSubjects: Using existing subjects channel');
-      }
-    };
-
-    setupChannel();
+    manager.subscribe(callback);
 
     return () => {
-      // Decrement subscriber count
-      globalSubjectsSubscribers--;
-      console.log('useSubjects: Cleaning up, remaining subscribers:', globalSubjectsSubscribers);
-      
-      // Remove this callback from the global set
-      if (callbackRef.current) {
-        globalSubjectsCallbacks.delete(callbackRef.current);
-      }
-      
-      // Only clean up the channel when no more subscribers
-      if (globalSubjectsSubscribers <= 0 && globalSubjectsChannel) {
-        console.log('useSubjects: Cleaning up global subjects channel');
-        try {
-          supabase.removeChannel(globalSubjectsChannel);
-        } catch (error) {
-          console.log('useSubjects: Error cleaning up channel:', error);
-        }
-        globalSubjectsChannel = null;
-        globalSubjectsSubscribers = 0;
-        globalSubjectsCallbacks.clear();
-        globalSubjectsChannelPromise = null;
-      }
+      manager.unsubscribe(callback);
     };
   }, []);
 
