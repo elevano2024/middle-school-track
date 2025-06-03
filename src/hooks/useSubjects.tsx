@@ -12,7 +12,6 @@ export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
 
   const fetchSubjects = async () => {
     try {
@@ -47,12 +46,6 @@ export const useSubjects = () => {
 
   // Set up real-time subscription for subjects changes
   useEffect(() => {
-    // If we already have a subscribed channel, don't create another one
-    if (isSubscribedRef.current && channelRef.current) {
-      console.log('useSubjects: Channel already subscribed, skipping');
-      return;
-    }
-
     // Clean up any existing channel first
     if (channelRef.current) {
       console.log('useSubjects: Cleaning up existing channel');
@@ -62,7 +55,6 @@ export const useSubjects = () => {
         console.log('useSubjects: Error cleaning up existing channel:', error);
       }
       channelRef.current = null;
-      isSubscribedRef.current = false;
     }
 
     const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
@@ -71,17 +63,17 @@ export const useSubjects = () => {
     const channel = supabase.channel(channelName);
     channelRef.current = channel;
     
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-        console.log('useSubjects: Subjects data changed, refetching...', payload);
-        fetchSubjects();
-      })
-      .subscribe((status) => {
-        console.log('useSubjects: Channel subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
-      });
+    // Check if channel is already subscribed before calling subscribe
+    if (channel.state !== 'joined' && channel.state !== 'joining') {
+      channel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
+          console.log('useSubjects: Subjects data changed, refetching...', payload);
+          fetchSubjects();
+        })
+        .subscribe((status) => {
+          console.log('useSubjects: Channel subscription status:', status);
+        });
+    }
 
     return () => {
       console.log('useSubjects: Cleaning up subjects channel');
@@ -92,7 +84,6 @@ export const useSubjects = () => {
           console.log('useSubjects: Error cleaning up channel:', error);
         }
         channelRef.current = null;
-        isSubscribedRef.current = false;
       }
     };
   }, []); // Empty dependency array to run only once
