@@ -1,12 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useStudents } from '@/hooks/useStudents';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { Task } from '@/hooks/useTasks';
+
+interface Student {
+  id: string;
+  name: string;
+  email?: string;
+  grade: string;
+}
 
 interface AssignFormData {
   student_id: string;
@@ -29,11 +35,41 @@ interface AssignTaskDialogProps {
 
 export const AssignTaskDialog = ({ task, open, onOpenChange }: AssignTaskDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
   const { toast } = useToast();
-  const { students, loading: studentsLoading } = useStudents();
   const { handleSubmit, setValue, watch, formState: { errors } } = useForm<AssignFormData>();
 
   const selectedStudentId = watch('student_id');
+
+  // Fetch students directly without using the hook to avoid subscription conflicts
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setStudentsLoading(true);
+        const { data, error } = await supabase
+          .from('students')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching students:', error);
+          setStudents([]);
+        } else {
+          setStudents(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        setStudents([]);
+      } finally {
+        setStudentsLoading(false);
+      }
+    };
+
+    if (open) {
+      fetchStudents();
+    }
+  }, [open]);
 
   const onSubmit = async (data: AssignFormData) => {
     if (!task || !data.student_id) return;
