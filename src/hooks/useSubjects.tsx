@@ -12,6 +12,7 @@ export const useSubjects = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchSubjects = async () => {
     try {
@@ -46,6 +47,12 @@ export const useSubjects = () => {
 
   // Set up real-time subscription for subjects changes
   useEffect(() => {
+    // If we already have a subscribed channel, don't create another one
+    if (isSubscribedRef.current && channelRef.current) {
+      console.log('useSubjects: Channel already subscribed, skipping');
+      return;
+    }
+
     // Clean up any existing channel first
     if (channelRef.current) {
       console.log('useSubjects: Cleaning up existing channel');
@@ -55,14 +62,13 @@ export const useSubjects = () => {
         console.log('useSubjects: Error cleaning up existing channel:', error);
       }
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
     const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
     console.log('useSubjects: Setting up real-time channel:', channelName);
     
     const channel = supabase.channel(channelName);
-    
-    // Set the channel reference BEFORE subscribing
     channelRef.current = channel;
     
     channel
@@ -72,6 +78,9 @@ export const useSubjects = () => {
       })
       .subscribe((status) => {
         console.log('useSubjects: Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
       });
 
     return () => {
@@ -83,6 +92,7 @@ export const useSubjects = () => {
           console.log('useSubjects: Error cleaning up channel:', error);
         }
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, []); // Empty dependency array to run only once

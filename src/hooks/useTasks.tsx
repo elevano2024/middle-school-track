@@ -31,6 +31,7 @@ export const useTasks = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
   const updatingTasksRef = useRef<Set<string>>(new Set());
 
   const fetchTasks = async () => {
@@ -119,6 +120,12 @@ export const useTasks = () => {
   useEffect(() => {
     if (!user) return;
 
+    // If we already have a subscribed channel, don't create another one
+    if (isSubscribedRef.current && channelRef.current) {
+      console.log('useTasks: Channel already subscribed, skipping');
+      return;
+    }
+
     // Clean up any existing channel first
     if (channelRef.current) {
       console.log('useTasks: Cleaning up existing channel');
@@ -128,6 +135,7 @@ export const useTasks = () => {
         console.log('useTasks: Error cleaning up existing channel:', error);
       }
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
     // Create new channel with a unique name to avoid conflicts
@@ -135,8 +143,6 @@ export const useTasks = () => {
     console.log('Creating new channel:', channelName);
     
     const channel = supabase.channel(channelName);
-    
-    // Set the channel reference BEFORE subscribing
     channelRef.current = channel;
     
     channel
@@ -154,6 +160,9 @@ export const useTasks = () => {
       })
       .subscribe((status) => {
         console.log('Channel subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
       });
 
     return () => {
@@ -165,6 +174,7 @@ export const useTasks = () => {
           console.log('Error cleaning up channel:', error);
         }
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [user?.id]); // Only depend on user.id
