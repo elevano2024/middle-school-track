@@ -4,7 +4,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, Edit, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EditSubjectDialog } from '@/components/EditSubjectDialog';
 import { DeleteSubjectDialog } from '@/components/DeleteSubjectDialog';
@@ -88,8 +88,8 @@ export const SubjectsList = () => {
                     onClick={() => setEditingSubject(subject)}
                     className="h-8 w-8 p-0"
                   >
+                    <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit subject</span>
-                    📝
                   </Button>
                   <Button
                     variant="ghost"
@@ -97,8 +97,8 @@ export const SubjectsList = () => {
                     onClick={() => setDeletingSubject(subject)}
                     className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
+                    <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Delete subject</span>
-                    🗑️
                   </Button>
                 </div>
               </div>
