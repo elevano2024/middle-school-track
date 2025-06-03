@@ -7,6 +7,7 @@ import { Navigate } from 'react-router-dom';
 import { AddSubjectForm } from '@/components/AddSubjectForm';
 import { AddTaskForm } from '@/components/AddTaskForm';
 import { SubjectsList } from '@/components/SubjectsList';
+import { TasksList } from '@/components/TasksList';
 import { BookOpen, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -78,7 +79,7 @@ const Settings = () => {
           <SubjectsList />
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-6">
+        <TabsContent value="tasks" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-xl text-blue-700">Create Learning Activity</CardTitle>
@@ -90,6 +91,8 @@ const Settings = () => {
               <AddTaskForm onTaskCreated={handleTaskCreated} />
             </CardContent>
           </Card>
+
+          <TasksList />
         </TabsContent>
       </Tabs>
     </div>
