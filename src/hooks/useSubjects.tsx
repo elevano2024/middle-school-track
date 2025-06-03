@@ -8,12 +8,13 @@ export interface Subject {
   created_at: string;
 }
 
-// Singleton channel manager to prevent multiple subscriptions
+// Global channel manager that ensures only one subscription per channel
 class SubjectsChannelManager {
   private static instance: SubjectsChannelManager;
   private channel: any = null;
   private subscribers: Set<() => void> = new Set();
-  private isInitializing = false;
+  private isSubscribed = false;
+  private isSubscribing = false;
 
   static getInstance(): SubjectsChannelManager {
     if (!SubjectsChannelManager.instance) {
@@ -24,62 +25,84 @@ class SubjectsChannelManager {
 
   async subscribe(callback: () => void): Promise<void> {
     this.subscribers.add(callback);
+    console.log('useSubjects: Added subscriber, total:', this.subscribers.size);
 
-    if (this.channel) {
-      console.log('useSubjects: Using existing channel');
+    // If already subscribed, nothing more to do
+    if (this.isSubscribed) {
+      console.log('useSubjects: Already subscribed, using existing channel');
       return;
     }
 
-    if (this.isInitializing) {
-      console.log('useSubjects: Channel initialization in progress, waiting...');
-      // Wait for initialization to complete
-      while (this.isInitializing) {
+    // If currently subscribing, wait for it to complete
+    if (this.isSubscribing) {
+      console.log('useSubjects: Subscription in progress, waiting...');
+      while (this.isSubscribing) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
       return;
     }
 
-    this.isInitializing = true;
-    console.log('useSubjects: Creating new subjects channel');
+    // Start subscribing
+    this.isSubscribing = true;
+    console.log('useSubjects: Creating and subscribing to new subjects channel');
 
     try {
+      // Create a unique channel name
       const channelName = `subjects-changes-${Date.now()}-${Math.random()}`;
       this.channel = supabase.channel(channelName);
       
-      this.channel
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, (payload) => {
-          console.log('useSubjects: Subjects data changed, notifying all subscribers...', payload);
-          this.subscribers.forEach(callback => {
-            try {
-              callback();
-            } catch (error) {
-              console.error('Error calling subjects callback:', error);
-            }
-          });
-        })
-        .subscribe((status) => {
-          console.log('useSubjects: Channel subscription status:', status);
-          this.isInitializing = false;
+      // Set up the channel with event handlers
+      this.channel.on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'subjects' 
+      }, (payload) => {
+        console.log('useSubjects: Database change detected, notifying subscribers...', payload);
+        this.subscribers.forEach(callback => {
+          try {
+            callback();
+          } catch (error) {
+            console.error('Error calling subjects callback:', error);
+          }
         });
+      });
+
+      // Subscribe to the channel (this should only happen once per channel instance)
+      await new Promise<void>((resolve, reject) => {
+        this.channel.subscribe((status) => {
+          console.log('useSubjects: Channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            this.isSubscribed = true;
+            this.isSubscribing = false;
+            resolve();
+          } else if (status === 'CHANNEL_ERROR') {
+            this.isSubscribing = false;
+            reject(new Error('Channel subscription failed'));
+          }
+        });
+      });
     } catch (error) {
       console.error('Error creating subjects channel:', error);
-      this.isInitializing = false;
+      this.isSubscribing = false;
+      this.isSubscribed = false;
     }
   }
 
   unsubscribe(callback: () => void): void {
     this.subscribers.delete(callback);
-    console.log('useSubjects: Subscriber removed, remaining:', this.subscribers.size);
+    console.log('useSubjects: Removed subscriber, remaining:', this.subscribers.size);
 
+    // If no more subscribers, cleanup the channel
     if (this.subscribers.size === 0 && this.channel) {
-      console.log('useSubjects: Cleaning up subjects channel');
+      console.log('useSubjects: No more subscribers, cleaning up channel');
       try {
         supabase.removeChannel(this.channel);
       } catch (error) {
         console.log('useSubjects: Error cleaning up channel:', error);
       }
       this.channel = null;
-      this.isInitializing = false;
+      this.isSubscribed = false;
+      this.isSubscribing = false;
     }
   }
 }
@@ -114,16 +137,16 @@ export const useSubjects = () => {
     }
   };
 
-  // Store the fetchSubjects function in a ref so it can be called by real-time updates
+  // Store the fetchSubjects function in a ref
   callbackRef.current = fetchSubjects;
 
   useEffect(() => {
-    // Always fetch subjects immediately
+    // Initial fetch
     console.log('useSubjects: Initial fetch triggered');
     fetchSubjects();
   }, []);
 
-  // Set up real-time subscription using singleton manager
+  // Set up real-time subscription
   useEffect(() => {
     if (!callbackRef.current) return;
 
