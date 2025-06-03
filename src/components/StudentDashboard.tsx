@@ -57,6 +57,29 @@ const StudentDashboard = () => {
     }
   };
 
+  // Calculate task status counts
+  const getTaskStatusCounts = () => {
+    return tasks.reduce((counts, task) => {
+      switch (task.status) {
+        case 'working':
+          counts.working++;
+          break;
+        case 'need-help':
+          counts.needHelp++;
+          break;
+        case 'ready-review':
+          counts.readyReview++;
+          break;
+        case 'completed':
+          counts.completed++;
+          break;
+      }
+      return counts;
+    }, { working: 0, needHelp: 0, readyReview: 0, completed: 0 });
+  };
+
+  const statusCounts = getTaskStatusCounts();
+
   // If no tasks at all
   if (tasks.length === 0) {
     return (
@@ -104,6 +127,55 @@ const StudentDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
         <p className="text-gray-600 mt-1">Track your progress and update your task status</p>
         <p className="text-sm text-gray-500 mt-1">Logged in as: {user?.email}</p>
+      </div>
+
+      {/* Student Progress Summary */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Student Progress Overview</h2>
+        
+        <div className="grid grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-3xl font-bold text-blue-600">{statusCounts.working}</div>
+            <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Working</div>
+          </div>
+          
+          <div className="text-center p-4 bg-red-50 rounded-lg">
+            <div className="text-3xl font-bold text-red-600">{statusCounts.needHelp}</div>
+            <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Need Help</div>
+          </div>
+          
+          <div className="text-center p-4 bg-yellow-50 rounded-lg">
+            <div className="text-3xl font-bold text-yellow-600">{statusCounts.readyReview}</div>
+            <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Ready Review</div>
+          </div>
+          
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-3xl font-bold text-green-600">{statusCounts.completed}</div>
+            <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">Completed</div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+            <span>Working</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+            <span>Need Help</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+            <span>Ready for Review</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            <span>Completed</span>
+          </div>
+          <div className="flex items-center ml-6">
+            <span className="text-gray-400">No Tasks</span>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
