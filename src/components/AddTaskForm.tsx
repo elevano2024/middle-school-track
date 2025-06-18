@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
-import { useTasks } from '@/hooks/useTasks';
 
 interface TaskFormData {
   title: string;
@@ -27,7 +26,6 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
   const { toast } = useToast();
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
-  const { refetch: refetchTasks } = useTasks();
   
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TaskFormData>();
 
@@ -45,9 +43,11 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
     }
 
     setIsSubmitting(true);
+    console.log('=== CREATING NEW TASK ===');
+    console.log('Task data:', data);
     
     try {
-      const { error } = await supabase
+      const { data: insertedTask, error } = await supabase
         .from('tasks')
         .insert([{
           title: data.title,
@@ -55,7 +55,8 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           student_id: data.student_id,
           subject_id: data.subject_id,
           status: 'working'
-        }]);
+        }])
+        .select();
 
       if (error) {
         console.error('Error creating learning activity:', error);
@@ -65,14 +66,17 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           variant: "destructive",
         });
       } else {
+        console.log('=== TASK CREATED SUCCESSFULLY ===');
+        console.log('Inserted task:', insertedTask);
+        
         toast({
           title: "Success",
           description: "Learning activity created successfully!",
         });
         reset();
         
-        // Trigger both callbacks to ensure data refreshes everywhere
-        await refetchTasks();
+        // Trigger callback to notify parent components
+        console.log('=== TRIGGERING CALLBACK ===');
         onTaskCreated?.();
       }
     } catch (error) {

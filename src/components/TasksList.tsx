@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,16 @@ export const TasksList = () => {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
 
+  // Add debugging to track when tasks change
+  useEffect(() => {
+    console.log('=== TASKS LIST UPDATE ===');
+    console.log('Tasks count:', tasks.length);
+    console.log('Loading:', loading);
+    console.log('Tasks data:', tasks);
+  }, [tasks, loading]);
+
   if (loading) {
+    console.log('TasksList: Rendering loading state');
     return (
       <Card>
         <CardHeader>
@@ -45,6 +54,7 @@ export const TasksList = () => {
   }
 
   if (tasks.length === 0) {
+    console.log('TasksList: Rendering empty state');
     return (
       <Card>
         <CardHeader>
@@ -64,6 +74,8 @@ export const TasksList = () => {
       </Card>
     );
   }
+
+  console.log('TasksList: Rendering table with', tasks.length, 'tasks');
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -105,70 +117,76 @@ export const TasksList = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-medium text-sm">{task.title}</div>
-                        {task.description && (
-                          <div className="text-xs text-gray-500 truncate max-w-xs" title={task.description}>
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {task.students?.name || 'Unassigned'}
-                        {task.students?.email && (
-                          <div className="text-xs text-gray-500">{task.students.email}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{task.subjects?.name || 'No Subject'}</span>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(task.status)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-500">
-                        {new Date(task.created_at).toLocaleDateString()}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingTask(task)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit task</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAssigningTask(task)}
-                          className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                          <span className="sr-only">Assign to student</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeletingTask(task)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete task</span>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {tasks.map((task) => {
+                  console.log('Rendering task row:', task.id, task.title);
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-medium text-sm">{task.title}</div>
+                          {task.description && (
+                            <div className="text-xs text-gray-500 truncate max-w-xs" title={task.description}>
+                              {task.description}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {task.students?.name || 'Unassigned'}
+                          {task.students?.email && (
+                            <div className="text-xs text-gray-500">{task.students.email}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{task.subjects?.name || 'No Subject'}</span>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(task.status)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-500">
+                          {new Date(task.created_at).toLocaleDateString()}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingTask(task)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit task</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAssigningTask(task)}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            <span className="sr-only">Assign to student</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              console.log('Setting task for deletion:', task.id, task.title);
+                              setDeletingTask(task);
+                            }}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete task</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -190,7 +208,13 @@ export const TasksList = () => {
       <DeleteTaskDialog
         task={deletingTask}
         open={!!deletingTask}
-        onOpenChange={(open) => !open && setDeletingTask(null)}
+        onOpenChange={(open) => {
+          console.log('DeleteTaskDialog onOpenChange:', open);
+          if (!open) {
+            console.log('Clearing deleting task');
+            setDeletingTask(null);
+          }
+        }}
       />
     </>
   );

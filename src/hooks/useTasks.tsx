@@ -16,15 +16,39 @@ export const useTasks = () => {
 
   const fetchTasks = useCallback(async () => {
     if (!user) {
-      console.log('No user found, skipping task fetch');
+      console.log('useTasks: No user found, skipping task fetch');
       setLoading(false);
       return;
     }
 
+    console.log('=== FETCHING TASKS ===');
+    console.log('User ID:', user.id);
+    console.log('Roles:', { isAdmin, isTeacher, isStudent });
+
     try {
       setError(null);
       const tasksData = await fetchTasksFromDatabase(user.id, isStudent, isAdmin, isTeacher);
-      setTasks(tasksData);
+      console.log('=== TASKS FETCHED ===');
+      console.log('New tasks count:', tasksData.length);
+      console.log('New tasks data:', tasksData);
+      
+      setTasks(prevTasks => {
+        console.log('=== UPDATING TASKS STATE ===');
+        console.log('Previous tasks count:', prevTasks.length);
+        console.log('New tasks count:', tasksData.length);
+        
+        // Check if tasks actually changed
+        const tasksChanged = prevTasks.length !== tasksData.length || 
+          JSON.stringify(prevTasks.map(t => t.id).sort()) !== JSON.stringify(tasksData.map(t => t.id).sort());
+        
+        if (tasksChanged) {
+          console.log('=== TASKS CHANGED - UPDATING STATE ===');
+        } else {
+          console.log('=== NO TASKS CHANGE DETECTED ===');
+        }
+        
+        return tasksData;
+      });
     } catch (error) {
       console.error('Error in fetchTasks:', error);
       setError('Failed to fetch tasks');
@@ -52,10 +76,15 @@ export const useTasks = () => {
     }
   }, [user, isAdmin, isTeacher, isStudent, roleLoading, fetchTasks]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription with enhanced logging
+  const realTimeCallback = useCallback(() => {
+    console.log('=== REAL-TIME CALLBACK TRIGGERED ===');
+    fetchTasks();
+  }, [fetchTasks]);
+
   useTasksRealtime({
     userId: user?.id,
-    onTasksChanged: fetchTasks,
+    onTasksChanged: realTimeCallback,
     updatingTasksRef: taskStatusManagerRef.current?.getUpdatingTasksRef() || { current: new Set() }
   });
 
