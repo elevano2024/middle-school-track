@@ -61,20 +61,21 @@ class TasksChannelManager {
         const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
         this.channel = supabase.channel(channelName);
         
-        // Set up the channel with event handlers
+        // Set up the channel with event handlers for all table events
         this.channel.on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
           table: 'tasks' 
         }, (payload) => {
           console.log('=== REAL-TIME UPDATE RECEIVED ===');
+          console.log('Event type:', payload.eventType);
           console.log('Payload:', payload);
           
           // Check if any subscriber is updating this task
           const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
           let shouldSkip = false;
           
-          if (taskId) {
+          if (taskId && payload.eventType === 'UPDATE') {
             for (const updatingTasksRef of this.updatingTasksRefs) {
               if (updatingTasksRef.current.has(taskId)) {
                 shouldSkip = true;
@@ -86,14 +87,18 @@ class TasksChannelManager {
           
           if (!shouldSkip) {
             console.log('=== TRIGGERING REAL-TIME REFRESH ===');
-            console.log(`Notifying ${this.subscribers.size} subscribers of external change`);
-            this.subscribers.forEach(callback => {
-              try {
-                callback();
-              } catch (error) {
-                console.error('Error calling task callback:', error);
-              }
-            });
+            console.log(`Event: ${payload.eventType}, notifying ${this.subscribers.size} subscribers`);
+            
+            // Add a small delay to ensure database consistency
+            setTimeout(() => {
+              this.subscribers.forEach(callback => {
+                try {
+                  callback();
+                } catch (error) {
+                  console.error('Error calling task callback:', error);
+                }
+              });
+            }, 100);
           } else {
             console.log('=== SKIPPING REAL-TIME REFRESH ===');
             console.log('Reason: Self-initiated update');

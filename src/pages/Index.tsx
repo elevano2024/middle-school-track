@@ -23,7 +23,9 @@ const Index = () => {
     console.log('Index: User roles:', { isAdmin, isTeacher, isStudent });
     console.log('Index: Subjects data:', subjects);
     console.log('Index: Subjects loading:', subjectsLoading);
-  }, [isAdmin, isTeacher, isStudent, subjects, subjectsLoading]);
+    console.log('Index: Tasks data length:', tasks.length);
+    console.log('Index: Tasks loading:', tasksLoading);
+  }, [isAdmin, isTeacher, isStudent, subjects, subjectsLoading, tasks, tasksLoading]);
 
   if (!user) {
     return (

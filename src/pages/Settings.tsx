@@ -33,12 +33,14 @@ const Settings = () => {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubjectCreated = () => {
-    refetchSubjects();
+  const handleSubjectCreated = async () => {
+    console.log('Subject created, refetching subjects...');
+    await refetchSubjects();
   };
 
-  const handleTaskCreated = () => {
-    refetchTasks();
+  const handleTaskCreated = async () => {
+    console.log('Task created, refetching tasks...');
+    await refetchTasks();
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
+import { useTasks } from '@/hooks/useTasks';
 
 interface TaskFormData {
   title: string;
@@ -27,6 +27,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
   const { toast } = useToast();
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
+  const { refetch: refetchTasks } = useTasks();
   
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TaskFormData>();
 
@@ -69,6 +70,9 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           description: "Learning activity created successfully!",
         });
         reset();
+        
+        // Trigger both callbacks to ensure data refreshes everywhere
+        await refetchTasks();
         onTaskCreated?.();
       }
     } catch (error) {
