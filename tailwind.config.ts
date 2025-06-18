@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -67,6 +68,30 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			fontFamily: {
+				sans: [
+					'system-ui',
+					'-apple-system',
+					'BlinkMacSystemFont',
+					'"Segoe UI"',
+					'Roboto',
+					'"Helvetica Neue"',
+					'Arial',
+					'"Noto Sans"',
+					'sans-serif',
+					'"Apple Color Emoji"',
+					'"Segoe UI Emoji"',
+					'"Segoe UI Symbol"',
+					'"Noto Color Emoji"'
+				],
+			},
+			boxShadow: {
+				'elevation-1': 'var(--shadow-sm)',
+				'elevation-2': 'var(--shadow)',
+				'elevation-3': 'var(--shadow-md)',
+				'elevation-4': 'var(--shadow-lg)',
+				'elevation-5': 'var(--shadow-xl)',
 			},
 			keyframes: {
 				'accordion-down': {
