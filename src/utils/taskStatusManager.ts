@@ -19,6 +19,7 @@ export class TaskStatusManager {
 
     try {
       this.updatingTasks.add(taskId);
+      console.log(`TaskStatusManager: Starting update for task ${taskId} to status ${newStatus}`);
       
       // Optimistically update local state first for immediate UI feedback
       this.setTasks(prevTasks => 
@@ -29,17 +30,23 @@ export class TaskStatusManager {
         )
       );
 
+      // Update in database
+      console.log(`TaskStatusManager: Updating database for task ${taskId}`);
       await updateTaskStatusInDatabase(taskId, newStatus);
+      
+      console.log(`TaskStatusManager: Successfully updated task ${taskId} to status ${newStatus}`);
       return true;
     } catch (error) {
-      console.error('Error updating task status:', error);
-      // Revert optimistic update on error
-      this.fetchTasks();
+      console.error('TaskStatusManager: Error updating task status:', error);
+      // Revert optimistic update on error by refetching tasks
+      console.log('TaskStatusManager: Reverting optimistic update by refetching tasks');
+      await this.fetchTasks();
       return false;
     } finally {
       // Remove from updating set after a brief delay to prevent race conditions
       setTimeout(() => {
         this.updatingTasks.delete(taskId);
+        console.log(`TaskStatusManager: Removed task ${taskId} from updating set`);
       }, 1000);
     }
   }

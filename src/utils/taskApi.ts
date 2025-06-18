@@ -56,22 +56,28 @@ export const fetchTasksFromDatabase = async (userId: string, isStudent: boolean,
 };
 
 export const updateTaskStatusInDatabase = async (taskId: string, newStatus: TaskStatus) => {
-  console.log(`Updating task ${taskId} status to ${newStatus}`);
+  console.log(`=== UPDATING TASK STATUS ===`);
+  console.log(`Task ID: ${taskId}`);
+  console.log(`New Status: ${newStatus}`);
   
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('tasks')
     .update({ 
       status: newStatus, 
       time_in_status: 0,
       updated_at: new Date().toISOString()
     })
-    .eq('id', taskId);
+    .eq('id', taskId)
+    .select(); // Add select to return the updated row
 
   if (error) {
-    console.error('Error updating task status:', error);
-    throw new Error('Failed to update task status');
+    console.error('=== ERROR UPDATING TASK STATUS ===');
+    console.error('Error details:', error);
+    throw new Error(`Failed to update task status: ${error.message}`);
   }
 
-  console.log(`Successfully updated task ${taskId} status to ${newStatus}`);
+  console.log('=== TASK STATUS UPDATE SUCCESSFUL ===');
+  console.log('Updated task data:', data);
+  
   return true;
 };

@@ -67,7 +67,8 @@ class TasksChannelManager {
           schema: 'public', 
           table: 'tasks' 
         }, (payload) => {
-          console.log('useTasksRealtime: Database change detected via real-time:', payload);
+          console.log('=== REAL-TIME UPDATE RECEIVED ===');
+          console.log('Payload:', payload);
           
           // Check if any subscriber is updating this task
           const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
@@ -77,13 +78,15 @@ class TasksChannelManager {
             for (const updatingTasksRef of this.updatingTasksRefs) {
               if (updatingTasksRef.current.has(taskId)) {
                 shouldSkip = true;
+                console.log(`Skipping real-time update for task ${taskId} - currently being updated locally`);
                 break;
               }
             }
           }
           
           if (!shouldSkip) {
-            console.log('useTasksRealtime: Notifying all subscribers of external change');
+            console.log('=== TRIGGERING REAL-TIME REFRESH ===');
+            console.log(`Notifying ${this.subscribers.size} subscribers of external change`);
             this.subscribers.forEach(callback => {
               try {
                 callback();
@@ -92,21 +95,25 @@ class TasksChannelManager {
               }
             });
           } else {
-            console.log('useTasksRealtime: Skipping refetch for self-initiated update');
+            console.log('=== SKIPPING REAL-TIME REFRESH ===');
+            console.log('Reason: Self-initiated update');
           }
         });
 
         // Subscribe to the channel (this should only happen once per channel instance)
         this.channel.subscribe((status) => {
-          console.log('useTasksRealtime: Channel subscription status:', status);
+          console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
+          console.log('Status:', status);
           if (status === 'SUBSCRIBED') {
             this.isSubscribed = true;
             this.isSubscribing = false;
             this.subscriptionPromise = null;
+            console.log('=== REAL-TIME SUBSCRIPTION SUCCESSFUL ===');
             resolve();
           } else if (status === 'CHANNEL_ERROR') {
             this.isSubscribing = false;
             this.subscriptionPromise = null;
+            console.error('=== REAL-TIME SUBSCRIPTION FAILED ===');
             reject(new Error('Channel subscription failed'));
           }
         });
@@ -162,9 +169,13 @@ export const useTasksRealtime = ({ userId, onTasksChanged, updatingTasksRef }: U
     const callback = callbackRef.current;
     const updatingTasksRef = updatingRef.current;
 
+    console.log('=== SETTING UP REAL-TIME SUBSCRIPTION ===');
+    console.log('User ID:', userId);
+
     manager.subscribe(callback, updatingTasksRef);
 
     return () => {
+      console.log('=== CLEANING UP REAL-TIME SUBSCRIPTION ===');
       manager.unsubscribe(callback, updatingTasksRef);
     };
   }, [userId]);

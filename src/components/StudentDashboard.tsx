@@ -49,11 +49,16 @@ const StudentDashboard = () => {
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
     console.log(`Student updating task ${taskId} to status ${newStatus}`);
-    const success = await updateTaskStatus(taskId, newStatus);
-    if (success) {
-      console.log(`Task ${taskId} status updated to ${newStatus}`);
-    } else {
-      console.error(`Failed to update task ${taskId} status to ${newStatus}`);
+    
+    try {
+      const success = await updateTaskStatus(taskId, newStatus);
+      if (success) {
+        console.log(`Task ${taskId} status updated successfully to ${newStatus}`);
+      } else {
+        console.error(`Failed to update task ${taskId} status to ${newStatus}`);
+      }
+    } catch (error) {
+      console.error('Error in handleUpdateTaskStatus:', error);
     }
   };
 
