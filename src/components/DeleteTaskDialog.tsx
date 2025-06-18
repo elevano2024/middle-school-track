@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTasks } from '@/hooks/useTasks';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ interface DeleteTaskDialogProps {
 export const DeleteTaskDialog = ({ task, open, onOpenChange }: DeleteTaskDialogProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { refetch: refetchTasks } = useTasks();
 
   const handleDelete = async () => {
     if (!task) return;
@@ -47,6 +49,9 @@ export const DeleteTaskDialog = ({ task, open, onOpenChange }: DeleteTaskDialogP
           title: "Success",
           description: "Learning activity deleted successfully!",
         });
+        
+        // Trigger refetch to ensure immediate UI update
+        await refetchTasks();
         onOpenChange(false);
       }
     } catch (error) {

@@ -61,7 +61,7 @@ class TasksChannelManager {
         const channelName = `tasks-changes-${Date.now()}-${Math.random()}`;
         this.channel = supabase.channel(channelName);
         
-        // Set up the channel with event handlers for all table events
+        // Set up the channel with event handlers for all table events (INSERT, UPDATE, DELETE)
         this.channel.on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
@@ -71,7 +71,7 @@ class TasksChannelManager {
           console.log('Event type:', payload.eventType);
           console.log('Payload:', payload);
           
-          // Check if any subscriber is updating this task
+          // Check if any subscriber is updating this task (only for UPDATE events)
           const taskId = (payload.new as any)?.id || (payload.old as any)?.id;
           let shouldSkip = false;
           
@@ -89,7 +89,10 @@ class TasksChannelManager {
             console.log('=== TRIGGERING REAL-TIME REFRESH ===');
             console.log(`Event: ${payload.eventType}, notifying ${this.subscribers.size} subscribers`);
             
-            // Add a small delay to ensure database consistency
+            // For INSERT and DELETE events, refresh immediately
+            // For UPDATE events, add a small delay to ensure database consistency
+            const delay = payload.eventType === 'UPDATE' ? 100 : 0;
+            
             setTimeout(() => {
               this.subscribers.forEach(callback => {
                 try {
@@ -98,14 +101,14 @@ class TasksChannelManager {
                   console.error('Error calling task callback:', error);
                 }
               });
-            }, 100);
+            }, delay);
           } else {
             console.log('=== SKIPPING REAL-TIME REFRESH ===');
             console.log('Reason: Self-initiated update');
           }
         });
 
-        // Subscribe to the channel (this should only happen once per channel instance)
+        // Subscribe to the channel
         this.channel.subscribe((status) => {
           console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
           console.log('Status:', status);
