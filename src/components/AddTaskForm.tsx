@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,8 +76,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
         });
         reset();
         
-        // Trigger callback to notify parent components
-        console.log('=== TRIGGERING CALLBACK ===');
+        // Call the callback if provided (for manual refresh as backup)
         onTaskCreated?.();
       }
     } catch (error) {

@@ -28,27 +28,10 @@ export const useTasks = () => {
     try {
       setError(null);
       const tasksData = await fetchTasksFromDatabase(user.id, isStudent, isAdmin, isTeacher);
-      console.log('=== TASKS FETCHED ===');
-      console.log('New tasks count:', tasksData.length);
-      console.log('New tasks data:', tasksData);
+      console.log('=== TASKS FETCHED SUCCESSFULLY ===');
+      console.log('Tasks count:', tasksData.length);
       
-      setTasks(prevTasks => {
-        console.log('=== UPDATING TASKS STATE ===');
-        console.log('Previous tasks count:', prevTasks.length);
-        console.log('New tasks count:', tasksData.length);
-        
-        // Check if tasks actually changed
-        const tasksChanged = prevTasks.length !== tasksData.length || 
-          JSON.stringify(prevTasks.map(t => t.id).sort()) !== JSON.stringify(tasksData.map(t => t.id).sort());
-        
-        if (tasksChanged) {
-          console.log('=== TASKS CHANGED - UPDATING STATE ===');
-        } else {
-          console.log('=== NO TASKS CHANGE DETECTED ===');
-        }
-        
-        return tasksData;
-      });
+      setTasks(tasksData);
     } catch (error) {
       console.error('Error in fetchTasks:', error);
       setError('Failed to fetch tasks');
@@ -65,10 +48,10 @@ export const useTasks = () => {
     taskStatusManagerRef.current = new TaskStatusManager(setTasks, fetchTasks);
   }
 
+  // Initial fetch when user and roles are available
   useEffect(() => {
-    console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent }, 'roleLoading:', roleLoading);
+    console.log('useTasks initial effect - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent }, 'roleLoading:', roleLoading);
     
-    // Fetch tasks if we have a user and roles have finished loading
     if (user && !roleLoading) {
       fetchTasks();
     } else if (!user) {
@@ -76,7 +59,7 @@ export const useTasks = () => {
     }
   }, [user, isAdmin, isTeacher, isStudent, roleLoading, fetchTasks]);
 
-  // Set up real-time subscription with enhanced logging
+  // Set up real-time subscription with a stable callback
   const realTimeCallback = useCallback(() => {
     console.log('=== REAL-TIME CALLBACK TRIGGERED ===');
     fetchTasks();
