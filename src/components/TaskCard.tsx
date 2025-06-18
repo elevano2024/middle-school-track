@@ -5,12 +5,13 @@ import { Clock, CircleDot } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
-  onUpdateStatus: (taskId: string, newStatus: TaskStatus) => void;
+  onUpdateStatus: (taskId: string, newStatus: TaskStatus) => Promise<boolean>;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const getStatusConfig = (status: TaskStatus) => {
     switch (status) {
@@ -47,15 +48,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     if (isUpdating || newStatus === task.status) return;
     
     setIsUpdating(true);
-    console.log(`Task "${task.title}" status changing to ${newStatus}`);
+    setUpdateError(null);
+    console.log(`Task "${task.title}" status changing from ${task.status} to ${newStatus}`);
     
     try {
-      await onUpdateStatus(task.id, newStatus);
-      console.log(`Task "${task.title}" status changed to ${newStatus}`);
-      // Automatically collapse the card after status change
-      setIsExpanded(false);
+      const success = await onUpdateStatus(task.id, newStatus);
+      
+      if (success) {
+        console.log(`Task "${task.title}" status successfully changed to ${newStatus}`);
+        // Automatically collapse the card after successful status change
+        setIsExpanded(false);
+      } else {
+        console.error(`Failed to update task "${task.title}" status to ${newStatus}`);
+        setUpdateError(`Failed to update status. Please try again.`);
+      }
     } catch (error) {
       console.error('Error updating task status:', error);
+      setUpdateError(`Error updating status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsUpdating(false);
     }
@@ -68,6 +77,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const handleIconClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
+    setUpdateError(null); // Clear any previous errors when expanding
   };
 
   return (
@@ -92,6 +102,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
         <div className="flex items-center text-xs text-gray-600 mb-2">
           <Clock className="w-3 h-3 mr-1" />
           {task.timeInStatus}m
+        </div>
+      )}
+
+      {updateError && (
+        <div className="text-xs text-red-600 mb-2 p-2 bg-red-50 rounded">
+          {updateError}
         </div>
       )}
 

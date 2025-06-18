@@ -61,6 +61,37 @@ export const updateTaskStatusInDatabase = async (taskId: string, newStatus: Task
   console.log(`New Status: ${newStatus}`);
   
   try {
+    // First, check if the task exists and get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('=== NO AUTHENTICATED USER ===');
+      return false;
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
+    // Check if the task exists and user has permission
+    const { data: existingTask, error: fetchError } = await supabase
+      .from('tasks')
+      .select('id, student_id, status')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) {
+      console.error('=== ERROR FETCHING TASK FOR VERIFICATION ===');
+      console.error('Fetch error:', fetchError);
+      return false;
+    }
+
+    if (!existingTask) {
+      console.error('=== TASK NOT FOUND ===');
+      return false;
+    }
+
+    console.log(`Found task: ${existingTask.id}, student_id: ${existingTask.student_id}, current status: ${existingTask.status}`);
+
+    // Perform the update
     const { data, error } = await supabase
       .from('tasks')
       .update({ 
@@ -69,13 +100,15 @@ export const updateTaskStatusInDatabase = async (taskId: string, newStatus: Task
         updated_at: new Date().toISOString()
       })
       .eq('id', taskId)
-      .select(); // Add select to return the updated row
+      .select();
 
     if (error) {
       console.error('=== ERROR UPDATING TASK STATUS ===');
       console.error('Error details:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
+      console.error('Error hint:', error.hint);
+      console.error('Error details:', error.details);
       return false;
     }
 
