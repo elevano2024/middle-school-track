@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useTasksRealtime } from '@/hooks/useTasksRealtime';
@@ -34,8 +34,12 @@ export const useTasks = () => {
     }
   }, [user, isAdmin, isTeacher, isStudent]);
 
-  // Create task status manager instance
-  const taskStatusManager = new TaskStatusManager(setTasks, fetchTasks);
+  // Create task status manager instance and persist it across renders
+  const taskStatusManagerRef = useRef<TaskStatusManager | null>(null);
+  
+  if (!taskStatusManagerRef.current) {
+    taskStatusManagerRef.current = new TaskStatusManager(setTasks, fetchTasks);
+  }
 
   useEffect(() => {
     console.log('useTasks effect triggered - user:', user?.id, 'roles:', { isAdmin, isTeacher, isStudent }, 'roleLoading:', roleLoading);
@@ -52,11 +56,15 @@ export const useTasks = () => {
   useTasksRealtime({
     userId: user?.id,
     onTasksChanged: fetchTasks,
-    updatingTasksRef: taskStatusManager.getUpdatingTasksRef()
+    updatingTasksRef: taskStatusManagerRef.current?.getUpdatingTasksRef() || { current: new Set() }
   });
 
   const updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
-    return taskStatusManager.updateTaskStatus(taskId, newStatus);
+    if (!taskStatusManagerRef.current) {
+      console.error('TaskStatusManager not initialized');
+      return Promise.resolve(false);
+    }
+    return taskStatusManagerRef.current.updateTaskStatus(taskId, newStatus);
   };
 
   return { tasks, loading, error, updateTaskStatus, refetch: fetchTasks };

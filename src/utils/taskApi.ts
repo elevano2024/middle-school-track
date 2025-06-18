@@ -55,29 +55,44 @@ export const fetchTasksFromDatabase = async (userId: string, isStudent: boolean,
   return tasksData;
 };
 
-export const updateTaskStatusInDatabase = async (taskId: string, newStatus: TaskStatus) => {
+export const updateTaskStatusInDatabase = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
   console.log(`=== UPDATING TASK STATUS ===`);
   console.log(`Task ID: ${taskId}`);
   console.log(`New Status: ${newStatus}`);
   
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({ 
-      status: newStatus, 
-      time_in_status: 0,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', taskId)
-    .select(); // Add select to return the updated row
+  try {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ 
+        status: newStatus, 
+        time_in_status: 0,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', taskId)
+      .select(); // Add select to return the updated row
 
-  if (error) {
-    console.error('=== ERROR UPDATING TASK STATUS ===');
-    console.error('Error details:', error);
-    throw new Error(`Failed to update task status: ${error.message}`);
+    if (error) {
+      console.error('=== ERROR UPDATING TASK STATUS ===');
+      console.error('Error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      return false;
+    }
+
+    if (!data || data.length === 0) {
+      console.error('=== NO ROWS UPDATED ===');
+      console.error('Task may not exist or user may not have permission');
+      return false;
+    }
+
+    console.log('=== TASK STATUS UPDATE SUCCESSFUL ===');
+    console.log('Updated task data:', data);
+    console.log('Number of rows updated:', data.length);
+    
+    return true;
+  } catch (error) {
+    console.error('=== UNEXPECTED ERROR UPDATING TASK STATUS ===');
+    console.error('Error:', error);
+    return false;
   }
-
-  console.log('=== TASK STATUS UPDATE SUCCESSFUL ===');
-  console.log('Updated task data:', data);
-  
-  return true;
 };

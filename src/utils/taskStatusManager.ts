@@ -4,11 +4,15 @@ import { updateTaskStatusInDatabase } from '@/utils/taskApi';
 
 export class TaskStatusManager {
   private updatingTasks: Set<string> = new Set();
+  private updatingTasksRef: React.MutableRefObject<Set<string>>;
 
   constructor(
     private setTasks: React.Dispatch<React.SetStateAction<Task[]>>,
     private fetchTasks: () => Promise<void>
-  ) {}
+  ) {
+    // Create a ref that will be stable across renders
+    this.updatingTasksRef = { current: this.updatingTasks };
+  }
 
   async updateTaskStatus(taskId: string, newStatus: TaskStatus): Promise<boolean> {
     // Prevent duplicate updates
@@ -32,10 +36,14 @@ export class TaskStatusManager {
 
       // Update in database
       console.log(`TaskStatusManager: Updating database for task ${taskId}`);
-      await updateTaskStatusInDatabase(taskId, newStatus);
+      const success = await updateTaskStatusInDatabase(taskId, newStatus);
       
-      console.log(`TaskStatusManager: Successfully updated task ${taskId} to status ${newStatus}`);
-      return true;
+      if (success) {
+        console.log(`TaskStatusManager: Successfully updated task ${taskId} to status ${newStatus}`);
+        return true;
+      } else {
+        throw new Error('Database update failed');
+      }
     } catch (error) {
       console.error('TaskStatusManager: Error updating task status:', error);
       // Revert optimistic update on error by refetching tasks
@@ -52,6 +60,6 @@ export class TaskStatusManager {
   }
 
   getUpdatingTasksRef(): React.MutableRefObject<Set<string>> {
-    return { current: this.updatingTasks };
+    return this.updatingTasksRef;
   }
 }
