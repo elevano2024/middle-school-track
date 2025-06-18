@@ -7,7 +7,7 @@ interface FleetBoardProps {
   students: Student[];
   subjects: string[];
   tasks: Task[];
-  onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
+  onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => Promise<boolean>;
   getTasksForStudent: (studentId: string) => Task[];
 }
 

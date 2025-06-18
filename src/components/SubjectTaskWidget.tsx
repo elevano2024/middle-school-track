@@ -3,11 +3,12 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TaskCard from './TaskCard';
 import { Task } from '@/hooks/useTasks';
+import { TaskStatus } from '@/types/task';
 
 interface SubjectTaskWidgetProps {
   subjectName: string;
   tasks: Task[];
-  onUpdateTaskStatus: (taskId: string, newStatus: any) => Promise<void>;
+  onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => Promise<boolean>;
 }
 
 const SubjectTaskWidget: React.FC<SubjectTaskWidgetProps> = ({
@@ -31,6 +32,24 @@ const SubjectTaskWidget: React.FC<SubjectTaskWidgetProps> = ({
   };
 
   const statusCounts = getStatusCounts();
+
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
+    console.log(`SubjectTaskWidget updating task ${taskId} to status ${newStatus}`);
+    
+    try {
+      const success = await onUpdateTaskStatus(taskId, newStatus);
+      if (success) {
+        console.log(`Task ${taskId} status updated successfully to ${newStatus}`);
+        return true;
+      } else {
+        console.error(`Failed to update task ${taskId} status to ${newStatus}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error in SubjectTaskWidget handleUpdateTaskStatus:', error);
+      return false;
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -82,7 +101,7 @@ const SubjectTaskWidget: React.FC<SubjectTaskWidgetProps> = ({
               <TaskCard
                 key={task.id}
                 task={transformedTask}
-                onUpdateStatus={onUpdateTaskStatus}
+                onUpdateStatus={handleUpdateTaskStatus}
               />
             );
           })}

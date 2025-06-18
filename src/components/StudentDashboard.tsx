@@ -6,6 +6,7 @@ import TaskCard from './TaskCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Clock, HelpCircle } from 'lucide-react';
+import { TaskStatus } from '@/types/task';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -47,18 +48,21 @@ const StudentDashboard = () => {
     );
   }
 
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
     console.log(`Student updating task ${taskId} to status ${newStatus}`);
     
     try {
       const success = await updateTaskStatus(taskId, newStatus);
       if (success) {
         console.log(`Task ${taskId} status updated successfully to ${newStatus}`);
+        return true;
       } else {
         console.error(`Failed to update task ${taskId} status to ${newStatus}`);
+        return false;
       }
     } catch (error) {
       console.error('Error in handleUpdateTaskStatus:', error);
+      return false;
     }
   };
 

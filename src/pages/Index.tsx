@@ -9,6 +9,7 @@ import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
 import { Card, CardContent } from '@/components/ui/card';
+import { TaskStatus } from '@/types/task';
 
 const Index = () => {
   const { user } = useAuth();
@@ -130,13 +131,15 @@ const Index = () => {
     return transformedTasks.filter(task => task.studentId === studentId);
   };
 
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: any) => {
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
     console.log(`Index: Attempting to update task ${taskId} to status ${newStatus}`);
     const success = await updateTaskStatus(taskId, newStatus);
     if (success) {
       console.log(`Index: Task ${taskId} status updated to ${newStatus}`);
+      return true;
     } else {
       console.error(`Index: Failed to update task ${taskId} status to ${newStatus}`);
+      return false;
     }
   };
 
