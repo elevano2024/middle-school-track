@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, Loader2, Edit, Trash2, UserPlus } from 'lucide-react';
+import { ClipboardList, Loader2, Edit, Trash2, UserPlus, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Table,
@@ -20,10 +20,11 @@ import { AssignTaskDialog } from '@/components/AssignTaskDialog';
 import type { Task } from '@/hooks/useTasks';
 
 export const TasksList = () => {
-  const { tasks, loading } = useTasks();
+  const { tasks, loading, refetch } = useTasks();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Add debugging to track when tasks change
   useEffect(() => {
@@ -32,6 +33,18 @@ export const TasksList = () => {
     console.log('Loading:', loading);
     console.log('Tasks data:', tasks);
   }, [tasks, loading]);
+
+  const handleManualRefresh = async () => {
+    console.log('=== MANUAL REFRESH TRIGGERED ===');
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (loading) {
     console.log('TasksList: Rendering loading state');
@@ -58,10 +71,22 @@ export const TasksList = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" />
-            Learning Activities
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Learning Activities
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="sr-only">Refresh activities</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -98,10 +123,22 @@ export const TasksList = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" />
-            Learning Activities ({tasks.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Learning Activities ({tasks.length})
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="sr-only">Refresh activities</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
