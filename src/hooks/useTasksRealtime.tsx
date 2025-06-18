@@ -89,13 +89,15 @@ class TasksChannelManager {
             console.log('=== TRIGGERING REAL-TIME REFRESH ===');
             console.log(`Event: ${payload.eventType}, notifying ${this.subscribers.size} subscribers`);
             
-            // For INSERT and DELETE events, refresh immediately
+            // For DELETE events, refresh immediately to remove from UI
+            // For INSERT events, refresh immediately to show new items
             // For UPDATE events, add a small delay to ensure database consistency
-            const delay = payload.eventType === 'UPDATE' ? 100 : 0;
+            const delay = payload.eventType === 'UPDATE' ? 50 : 0;
             
             setTimeout(() => {
               this.subscribers.forEach(callback => {
                 try {
+                  console.log('Calling task refresh callback for event:', payload.eventType);
                   callback();
                 } catch (error) {
                   console.error('Error calling task callback:', error);
