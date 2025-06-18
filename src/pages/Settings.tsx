@@ -20,10 +20,9 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen surface-container-lowest flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-body-large text-muted-foreground">Loading...</p>
+          <p>Loading...</p>
         </div>
       </div>
     );
@@ -43,39 +42,32 @@ const Settings = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <SettingsIcon className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-display-small font-medium text-foreground">Montessori Settings</h1>
-            <p className="text-body-large text-muted-foreground">Manage subjects and learning activities for your students</p>
-          </div>
+    <div className="container mx-auto py-6 max-w-6xl">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <SettingsIcon className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold text-gray-900">Montessori Settings</h1>
         </div>
+        <p className="text-gray-600">Manage subjects and learning activities for your students</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 p-1 bg-muted rounded-xl">
-          <TabsTrigger value="subjects" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:elevation-1">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="subjects" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            <span className="text-label-large">Subjects</span>
+            Subjects
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:elevation-1">
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            <span className="text-label-large">Learning Activities</span>
+            Learning Activities
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="subjects" className="mt-8 space-y-6">
+        <TabsContent value="subjects" className="mt-6 space-y-6">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-headline-medium text-primary flex items-center gap-3">
-                <BookOpen className="h-6 w-6" />
-                Add New Subject Area
-              </CardTitle>
-              <CardDescription className="text-body-medium">
+            <CardHeader>
+              <CardTitle className="text-xl text-blue-700">Add New Subject Area</CardTitle>
+              <CardDescription>
                 Create subject areas that align with Montessori principles (e.g., Practical Life, Sensorial, Mathematics, Language, Cultural Studies)
               </CardDescription>
             </CardHeader>
@@ -87,14 +79,11 @@ const Settings = () => {
           <SubjectsList />
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-8 space-y-6">
+        <TabsContent value="tasks" className="mt-6 space-y-6">
           <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-headline-medium text-primary flex items-center gap-3">
-                <ClipboardList className="h-6 w-6" />
-                Create Learning Activity
-              </CardTitle>
-              <CardDescription className="text-body-medium">
+            <CardHeader>
+              <CardTitle className="text-xl text-blue-700">Create Learning Activity</CardTitle>
+              <CardDescription>
                 Assign meaningful learning activities to students based on their individual development and interests
               </CardDescription>
             </CardHeader>
