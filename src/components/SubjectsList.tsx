@@ -4,16 +4,29 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Loader2, Edit, Trash2 } from 'lucide-react';
+import { BookOpen, Loader2, Edit, Trash2, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EditSubjectDialog } from '@/components/EditSubjectDialog';
 import { DeleteSubjectDialog } from '@/components/DeleteSubjectDialog';
 import type { Subject } from '@/hooks/useSubjects';
 
 export const SubjectsList = () => {
-  const { subjects, loading } = useSubjects();
+  const { subjects, loading, refetch } = useSubjects();
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    console.log('=== MANUAL REFRESH TRIGGERED FOR SUBJECTS ===');
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error('Error during manual refresh of subjects:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -38,10 +51,22 @@ export const SubjectsList = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Existing Subjects
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Existing Subjects
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="sr-only">Refresh subjects</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -59,10 +84,22 @@ export const SubjectsList = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Existing Subjects ({subjects.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Existing Subjects ({subjects.length})
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="sr-only">Refresh subjects</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
