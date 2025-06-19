@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
-import type { Task } from '@/hooks/useTasks';
+import type { Task } from '@/types/task';
 
 export const TasksList = () => {
   const { tasks, loading, refetch } = useTasks();
