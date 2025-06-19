@@ -33,25 +33,25 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({ tasks }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Student Progress Overview</h2>
       
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/50">
-          <div className="text-4xl font-bold text-blue-600 mb-2">{counts.working}</div>
-          <div className="text-sm font-semibold text-blue-700 uppercase tracking-wide">Working</div>
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200/50">
+          <div className="text-2xl font-bold text-blue-600 mb-1">{counts.working}</div>
+          <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Working</div>
         </div>
         
-        <div className="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200/50">
-          <div className="text-4xl font-bold text-red-600 mb-2">{counts.needHelp}</div>
-          <div className="text-sm font-semibold text-red-700 uppercase tracking-wide">Need Help</div>
+        <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200/50">
+          <div className="text-2xl font-bold text-red-600 mb-1">{counts.needHelp}</div>
+          <div className="text-xs font-semibold text-red-700 uppercase tracking-wide">Need Help</div>
         </div>
         
-        <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200/50">
-          <div className="text-4xl font-bold text-yellow-600 mb-2">{counts.readyReview}</div>
-          <div className="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Ready Review</div>
+        <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200/50">
+          <div className="text-2xl font-bold text-yellow-600 mb-1">{counts.readyReview}</div>
+          <div className="text-xs font-semibold text-yellow-700 uppercase tracking-wide">Ready Review</div>
         </div>
         
-        <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200/50">
-          <div className="text-4xl font-bold text-green-600 mb-2">{counts.completed}</div>
-          <div className="text-sm font-semibold text-green-700 uppercase tracking-wide">Completed</div>
+        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200/50">
+          <div className="text-2xl font-bold text-green-600 mb-1">{counts.completed}</div>
+          <div className="text-xs font-semibold text-green-700 uppercase tracking-wide">Completed</div>
         </div>
       </div>
 
