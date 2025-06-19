@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
@@ -14,7 +15,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 interface TaskFormData {
   title: string;
   description: string;
-  student_id: string;
+  student_ids: string[];
   subject_id: string;
 }
 
@@ -24,66 +25,107 @@ interface AddTaskFormProps {
 
 export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const { toast } = useToast();
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
   
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TaskFormData>();
 
-  const selectedStudentId = watch('student_id');
   const selectedSubjectId = watch('subject_id');
 
+  const handleStudentToggle = (studentId: string, checked: boolean) => {
+    let newSelection: string[];
+    
+    if (checked) {
+      newSelection = [...selectedStudents, studentId];
+    } else {
+      newSelection = selectedStudents.filter(id => id !== studentId);
+    }
+    
+    setSelectedStudents(newSelection);
+    setValue('student_ids', newSelection);
+  };
+
+  const handleSelectAll = () => {
+    const allStudentIds = students.map(s => s.id);
+    setSelectedStudents(allStudentIds);
+    setValue('student_ids', allStudentIds);
+  };
+
+  const handleSelectNone = () => {
+    setSelectedStudents([]);
+    setValue('student_ids', []);
+  };
+
   const onSubmit = async (data: TaskFormData) => {
-    if (!data.student_id || !data.subject_id) {
+    if (!data.student_ids || data.student_ids.length === 0) {
       toast({
         title: "Error",
-        description: "Please select both a student and a subject area.",
+        description: "Please select at least one student.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.subject_id) {
+      toast({
+        title: "Error",
+        description: "Please select a subject area.",
         variant: "destructive",
       });
       return;
     }
 
     setIsSubmitting(true);
-    console.log('=== CREATING NEW TASK ===');
+    console.log('=== CREATING NEW TASKS FOR MULTIPLE STUDENTS ===');
     console.log('Task data:', data);
     
     try {
-      const { data: insertedTask, error } = await supabase
-        .from('tasks')
-        .insert([{
-          title: data.title,
-          description: data.description || null,
-          student_id: data.student_id,
-          subject_id: data.subject_id,
-          status: 'working'
-        }])
-        .select();
+      // Create individual task assignments for each selected student
+      const taskPromises = data.student_ids.map(studentId => 
+        supabase
+          .from('tasks')
+          .insert({
+            title: data.title,
+            description: data.description || null,
+            student_id: studentId,
+            subject_id: data.subject_id,
+            status: 'working'
+          })
+      );
 
-      if (error) {
-        console.error('Error creating learning activity:', error);
+      const results = await Promise.all(taskPromises);
+      
+      // Check if any assignments failed
+      const hasErrors = results.some(result => result.error);
+      
+      if (hasErrors) {
+        const errorResults = results.filter(result => result.error);
+        console.error('Some task assignments failed:', errorResults);
         toast({
-          title: "Error",
-          description: "Failed to create learning activity. Please try again.",
+          title: "Partial Success",
+          description: `${results.length - errorResults.length} of ${results.length} assignments completed successfully.`,
           variant: "destructive",
         });
       } else {
-        console.log('=== TASK CREATED SUCCESSFULLY ===');
-        console.log('Inserted task:', insertedTask);
+        console.log('=== ALL TASKS CREATED SUCCESSFULLY ===');
         
         toast({
           title: "Success",
-          description: "Learning activity created successfully!",
+          description: `Learning activity assigned to ${data.student_ids.length} students successfully!`,
         });
         reset();
+        setSelectedStudents([]);
         
         // Call the callback if provided (for manual refresh as backup)
         onTaskCreated?.();
       }
     } catch (error) {
-      console.error('Error creating learning activity:', error);
+      console.error('Error creating learning activities:', error);
       toast({
         title: "Error",
-        description: "Failed to create learning activity. Please try again.",
+        description: "Failed to create learning activities. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -128,21 +170,50 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Student</Label>
-          <Select onValueChange={(value) => setValue('student_id', value)} value={selectedStudentId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a Student" />
-            </SelectTrigger>
-            <SelectContent>
-              {students.map((student) => (
-                <SelectItem key={student.id} value={student.id}>
+          <div className="flex items-center justify-between">
+            <Label>Select Students ({selectedStudents.length} selected)</Label>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm"
+                onClick={handleSelectAll}
+              >
+                Select All
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm"
+                onClick={handleSelectNone}
+              >
+                Select None
+              </Button>
+            </div>
+          </div>
+          
+          <div className="border rounded-md p-3 max-h-64 overflow-y-auto space-y-3">
+            {students.map((student) => (
+              <div key={student.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={student.id}
+                  checked={selectedStudents.includes(student.id)}
+                  onCheckedChange={(checked) => 
+                    handleStudentToggle(student.id, checked as boolean)
+                  }
+                />
+                <Label 
+                  htmlFor={student.id} 
+                  className="text-sm cursor-pointer flex-1"
+                >
                   {student.name} (Grade {student.grade})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.student_id && (
-            <p className="text-sm text-red-600">Please select a Student</p>
+                </Label>
+              </div>
+            ))}
+          </div>
+          
+          {errors.student_ids && (
+            <p className="text-sm text-red-600">Please select at least one student</p>
           )}
         </div>
 
@@ -167,7 +238,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Creating...' : 'Create Learning Activity'}
+        {isSubmitting ? 'Creating...' : `Create Learning Activity for ${selectedStudents.length} Students`}
       </Button>
     </form>
   );
