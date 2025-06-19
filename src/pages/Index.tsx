@@ -5,6 +5,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
+import { useAttendance } from '@/hooks/useAttendance';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
@@ -17,6 +18,7 @@ const Index = () => {
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
+  const { loading: attendanceLoading } = useAttendance(); // Initialize attendance hook
 
   // Add debugging for subjects data
   React.useEffect(() => {
@@ -77,7 +79,7 @@ const Index = () => {
     );
   }
 
-  if (subjectsLoading || tasksLoading) {
+  if (subjectsLoading || tasksLoading || attendanceLoading) {
     return (
       <div className="p-6">
         <Card>

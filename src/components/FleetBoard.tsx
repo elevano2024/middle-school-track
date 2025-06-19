@@ -2,6 +2,7 @@
 import React from 'react';
 import { Student, Task, TaskStatus } from '../types/workflow';
 import TaskCard from './TaskCard';
+import AttendanceIndicator from './AttendanceIndicator';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
 interface FleetBoardProps {
@@ -69,7 +70,10 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                 {students.map(student => (
                   <tr key={student.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 text-sm font-medium text-gray-900 bg-gray-50 sticky left-0 z-10">
-                      {student.name}
+                      <div className="flex items-center gap-2">
+                        <AttendanceIndicator studentId={student.id} showControls={true} />
+                        <span>{student.name}</span>
+                      </div>
                     </td>
                     {subjects.map(subject => {
                       const subjectTasks = getTasksForStudentAndSubject(student.id, subject);
