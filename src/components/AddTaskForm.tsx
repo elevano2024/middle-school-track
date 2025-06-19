@@ -131,7 +131,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           <Label>Student</Label>
           <Select onValueChange={(value) => setValue('student_id', value)} value={selectedStudentId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a Student" />
+              <SelectValue placeholder="Select a child" />
             </SelectTrigger>
             <SelectContent>
               {students.map((student) => (
