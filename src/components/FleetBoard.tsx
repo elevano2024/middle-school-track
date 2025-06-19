@@ -2,6 +2,7 @@
 import React from 'react';
 import { Student, Task, TaskStatus } from '../types/workflow';
 import TaskCard from './TaskCard';
+import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
 interface FleetBoardProps {
   students: Student[];
@@ -49,53 +50,56 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
     <div className="space-y-6">
       {/* Fleet Board Grid */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 min-w-[140px]">
-                  Student
-                </th>
-                {subjects.map(subject => (
-                  <th key={subject} className="px-4 py-3 text-center text-sm font-medium text-gray-900 min-w-[180px]">
-                    {subject}
+        <ScrollArea className="w-full">
+          <div className="min-w-fit">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 min-w-[140px] sticky left-0 bg-gray-50 z-10">
+                    Student
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {students.map(student => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 text-sm font-medium text-gray-900 bg-gray-50">
-                    {student.name}
-                  </td>
-                  {subjects.map(subject => {
-                    const subjectTasks = getTasksForStudentAndSubject(student.id, subject);
-                    return (
-                      <td key={`${student.id}-${subject}`} className="px-2 py-2 min-h-[100px] align-top">
-                        <div className="space-y-2">
-                          {subjectTasks.length > 0 ? (
-                            subjectTasks.map(task => (
-                              <TaskCard
-                                key={task.id}
-                                task={task}
-                                onUpdateStatus={onUpdateTaskStatus}
-                              />
-                            ))
-                          ) : (
-                            <div className="text-center py-4 text-sm text-gray-400">
-                              No tasks assigned
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
+                  {subjects.map(subject => (
+                    <th key={subject} className="px-4 py-3 text-center text-sm font-medium text-gray-900 min-w-[180px]">
+                      {subject}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {students.map(student => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 text-sm font-medium text-gray-900 bg-gray-50 sticky left-0 z-10">
+                      {student.name}
+                    </td>
+                    {subjects.map(subject => {
+                      const subjectTasks = getTasksForStudentAndSubject(student.id, subject);
+                      return (
+                        <td key={`${student.id}-${subject}`} className="px-2 py-2 min-h-[100px] align-top">
+                          <div className="space-y-2">
+                            {subjectTasks.length > 0 ? (
+                              subjectTasks.map(task => (
+                                <TaskCard
+                                  key={task.id}
+                                  task={task}
+                                  onUpdateStatus={onUpdateTaskStatus}
+                                />
+                              ))
+                            ) : (
+                              <div className="text-center py-4 text-sm text-gray-400">
+                                No tasks assigned
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
 
       {/* Students Need Attention Section */}
@@ -106,7 +110,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
             {attentionNeeded.map((item, index) => (
               <li key={index} className="text-sm text-yellow-700">
                 <strong>{item.studentName}</strong> - {item.subject}: {item.taskTitle} 
-                <span className="text-yellow-600"> (needs help for {item.timeNeedingHelp} minutes)</span>
+                <span className="text-yellow-600"> (needs help for {item.timeInStatus} minutes)</span>
               </li>
             ))}
           </ul>
