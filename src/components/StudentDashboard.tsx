@@ -2,15 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ClipboardList, Loader2, User } from 'lucide-react';
+import { ClipboardList, Loader2 } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
-import { useAuth } from '@/contexts/AuthContext';
 import TaskCard from './TaskCard';
-import AttendanceIndicator from './AttendanceIndicator';
 
 const StudentDashboard = () => {
   const { tasks, loading, error, updateTaskStatus } = useTasks();
-  const { user } = useAuth();
 
   if (loading) {
     return (
@@ -40,15 +37,7 @@ const StudentDashboard = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
-              {user && (
-                <AttendanceIndicator 
-                  studentId={user.id} 
-                  studentName={user.email || 'You'}
-                />
-              )}
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
             <p className="text-gray-600">Complete your assigned activities at your own pace</p>
           </div>
           
@@ -79,15 +68,7 @@ const StudentDashboard = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
-            {user && (
-              <AttendanceIndicator 
-                studentId={user.id} 
-                studentName={user.email || 'You'}
-              />
-            )}
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
           <p className="text-gray-600">Complete your assigned activities at your own pace</p>
         </div>
 

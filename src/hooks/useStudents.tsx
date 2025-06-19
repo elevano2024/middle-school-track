@@ -46,8 +46,22 @@ export const useStudents = () => {
     fetchStudents();
   }, [user, isAdmin, isTeacher]);
 
-  // Real-time subscription is now handled centrally in useRealtimeSubscriptions
-  // No individual subscription needed here
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user || (!isAdmin && !isTeacher)) return;
+
+    const channel = supabase
+      .channel('students-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        console.log('Students data changed, refetching...');
+        fetchStudents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isAdmin, isTeacher]);
 
   return { students, loading, refetch: fetchStudents };
 };
