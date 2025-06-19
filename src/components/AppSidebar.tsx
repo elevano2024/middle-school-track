@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 
 const items = [
   { title: 'Dashboard', url: '/', icon: Home },
-  { title: 'Manage Tasks', url: '/settings', icon: Settings, teacherOnly: true },
+  { title: 'Settings', url: '/settings', icon: Settings, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 
@@ -53,7 +53,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!isCollapsed && (
           <div>
-            <h2 className="text-lg font-semibold text-blue-700">Montessori Tracker</h2>
+            <h2 className="text-lg font-semibold text-blue-700">ARCC</h2>
             <p className="text-xs text-gray-500">Learning Journey Manager</p>
           </div>
         )}
