@@ -53,11 +53,11 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[140px]">
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900 min-w-[140px]">
                   Student
                 </th>
                 {subjects.map(subject => (
-                  <th key={subject} className="px-4 py-3 text-center text-sm font-medium text-gray-900 border-r border-gray-200 min-w-[180px]">
+                  <th key={subject} className="px-4 py-3 text-center text-sm font-medium text-gray-900 min-w-[180px]">
                     {subject}
                   </th>
                 ))}
@@ -66,13 +66,13 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
             <tbody className="divide-y divide-gray-200">
               {students.map(student => (
                 <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 text-sm font-medium text-gray-900 border-r border-gray-200 bg-gray-50">
+                  <td className="px-4 py-4 text-sm font-medium text-gray-900 bg-gray-50">
                     {student.name}
                   </td>
                   {subjects.map(subject => {
                     const subjectTasks = getTasksForStudentAndSubject(student.id, subject);
                     return (
-                      <td key={`${student.id}-${subject}`} className="px-2 py-2 border-r border-gray-200 min-h-[100px] align-top">
+                      <td key={`${student.id}-${subject}`} className="px-2 py-2 min-h-[100px] align-top">
                         <div className="space-y-2">
                           {subjectTasks.length > 0 ? (
                             subjectTasks.map(task => (
