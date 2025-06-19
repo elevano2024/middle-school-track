@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/button';
 const items = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Settings', url: '/settings', icon: Settings, teacherOnly: true },
-  { title: 'Add Content', url: '/add-content', icon: Plus, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 
