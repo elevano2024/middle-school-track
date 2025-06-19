@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, Loader2, Edit, Trash2, UserPlus, RefreshCw } from 'lucide-react';
+import { ClipboardList, Loader2, Edit, Trash2, UserPlus, RefreshCw, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Table,
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
+import { BulkAssignTaskDialog } from '@/components/BulkAssignTaskDialog';
 import type { Task } from '@/types/task';
 
 export const TasksList = () => {
@@ -23,6 +25,7 @@ export const TasksList = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
+  const [bulkAssigningTask, setBulkAssigningTask] = useState<Task | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Add debugging to track when tasks change
@@ -209,6 +212,16 @@ export const TasksList = () => {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => setBulkAssigningTask(task)}
+                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Assign to multiple students"
+                          >
+                            <Users className="h-4 w-4" />
+                            <span className="sr-only">Assign to multiple students</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               console.log('Setting task for deletion:', task.id, task.title);
                               setDeletingTask(task);
@@ -239,6 +252,12 @@ export const TasksList = () => {
         task={assigningTask}
         open={!!assigningTask}
         onOpenChange={(open) => !open && setAssigningTask(null)}
+      />
+
+      <BulkAssignTaskDialog
+        task={bulkAssigningTask}
+        open={!!bulkAssigningTask}
+        onOpenChange={(open) => !open && setBulkAssigningTask(null)}
       />
 
       <DeleteTaskDialog
