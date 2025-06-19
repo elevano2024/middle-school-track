@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, BookOpen } from 'lucide-react';
 
 interface TaskFormData {
   title: string;
@@ -135,111 +137,148 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
 
   if (studentsLoading || subjectsLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <p>Loading students and subject areas...</p>
+      <div className="flex items-center justify-center py-12">
+        <p className="text-gray-600">Loading students and subject areas...</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="title">Activity Name</Label>
-        <Input
-          id="title"
-          placeholder="e.g., Pink Tower exploration, Number rods work, Practical life - pouring"
-          {...register('title', { 
-            required: 'Activity name is required',
-            minLength: { value: 3, message: 'Activity name must be at least 3 characters' }
-          })}
-        />
-        {errors.title && (
-          <p className="text-sm text-red-600">{errors.title.message}</p>
-        )}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      {/* Activity Details Section */}
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <Label htmlFor="title" className="text-base font-medium">Activity Name</Label>
+          <Input
+            id="title"
+            placeholder="e.g., Pink Tower exploration, Number rods work, Practical life - pouring"
+            className="text-base py-3"
+            {...register('title', { 
+              required: 'Activity name is required',
+              minLength: { value: 3, message: 'Activity name must be at least 3 characters' }
+            })}
+          />
+          {errors.title && (
+            <p className="text-sm text-red-600">{errors.title.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <Label htmlFor="description" className="text-base font-medium">Learning Objectives & Notes</Label>
+          <p className="text-sm text-gray-600">Optional: Describe the learning goals, materials needed, or specific observations to make</p>
+          <Textarea
+            id="description"
+            placeholder="Enter learning objectives and notes here..."
+            rows={4}
+            className="text-base"
+            {...register('description')}
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Learning Objectives & Notes (Optional)</Label>
-        <Textarea
-          id="description"
-          placeholder="Describe the learning goals, materials needed, or specific observations to make..."
-          rows={3}
-          {...register('description')}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Select Students ({selectedStudents.length} selected)</Label>
-            <div className="flex gap-2">
+      {/* Assignment Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Students Selection */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5 text-blue-600" />
+              Select Students
+              <span className="text-sm font-normal text-gray-600">
+                ({selectedStudents.length} selected)
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
               <Button 
                 type="button" 
-                variant="ghost" 
+                variant="outline" 
                 size="sm"
                 onClick={handleSelectAll}
+                className="flex-1"
               >
                 Select All
               </Button>
               <Button 
                 type="button" 
-                variant="ghost" 
+                variant="outline" 
                 size="sm"
                 onClick={handleSelectNone}
+                className="flex-1"
               >
-                Select None
+                Clear All
               </Button>
             </div>
-          </div>
-          
-          <div className="border rounded-md p-3 max-h-64 overflow-y-auto space-y-3">
-            {students.map((student) => (
-              <div key={student.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={student.id}
-                  checked={selectedStudents.includes(student.id)}
-                  onCheckedChange={(checked) => 
-                    handleStudentToggle(student.id, checked as boolean)
-                  }
-                />
-                <Label 
-                  htmlFor={student.id} 
-                  className="text-sm cursor-pointer flex-1"
-                >
-                  {student.name} (Grade {student.grade})
-                </Label>
-              </div>
-            ))}
-          </div>
-          
-          {errors.student_ids && (
-            <p className="text-sm text-red-600">Please select at least one student</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Subject Area</Label>
-          <Select onValueChange={(value) => setValue('subject_id', value)} value={selectedSubjectId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a subject area" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.id} value={subject.id}>
-                  {subject.name}
-                </SelectItem>
+            
+            <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-3 bg-gray-50">
+              {students.map((student) => (
+                <div key={student.id} className="flex items-center space-x-3 p-2 hover:bg-white rounded-md transition-colors">
+                  <Checkbox
+                    id={student.id}
+                    checked={selectedStudents.includes(student.id)}
+                    onCheckedChange={(checked) => 
+                      handleStudentToggle(student.id, checked as boolean)
+                    }
+                  />
+                  <Label 
+                    htmlFor={student.id} 
+                    className="cursor-pointer flex-1 text-sm"
+                  >
+                    <div className="font-medium">{student.name}</div>
+                    <div className="text-xs text-gray-500">Grade {student.grade}</div>
+                  </Label>
+                </div>
               ))}
-            </SelectContent>
-          </Select>
-          {errors.subject_id && (
-            <p className="text-sm text-red-600">Please select a subject area</p>
-          )}
-        </div>
+            </div>
+            
+            {errors.student_ids && (
+              <p className="text-sm text-red-600">Please select at least one student</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Subject Selection */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              Subject Area
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Select onValueChange={(value) => setValue('subject_id', value)} value={selectedSubjectId}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="Choose a subject area" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id} className="text-base py-3">
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.subject_id && (
+                <p className="text-sm text-red-600">Please select a subject area</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Creating...' : `Create Learning Activity for ${selectedStudents.length} Students`}
-      </Button>
+      {/* Submit Button */}
+      <div className="pt-4">
+        <Button 
+          type="submit" 
+          disabled={isSubmitting || selectedStudents.length === 0} 
+          className="w-full h-12 text-base font-medium"
+          size="lg"
+        >
+          {isSubmitting ? 'Creating Activity...' : `Create Learning Activity for ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`}
+        </Button>
+      </div>
     </form>
   );
 };
