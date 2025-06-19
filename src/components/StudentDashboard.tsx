@@ -52,6 +52,18 @@ const StudentDashboard = () => {
     );
   }
 
+  // Convert tasks to the format expected by TaskCard
+  const convertedTasks = tasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description || '',
+    studentId: task.student_id,
+    subject: task.subjects?.name || 'No Subject',
+    status: task.status,
+    timeInStatus: task.time_in_status || 0,
+    createdAt: task.created_at
+  }));
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -61,7 +73,7 @@ const StudentDashboard = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {tasks.map(task => (
+          {convertedTasks.map(task => (
             <TaskCard
               key={task.id}
               task={task}

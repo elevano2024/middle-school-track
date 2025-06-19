@@ -147,12 +147,12 @@ export const TasksList = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Activity Name</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[25%] min-w-[150px]">Activity Name</TableHead>
+                  <TableHead className="w-[20%] min-w-[120px]">Student</TableHead>
+                  <TableHead className="w-[15%] min-w-[100px]">Subject</TableHead>
+                  <TableHead className="w-[12%] min-w-[90px]">Status</TableHead>
+                  <TableHead className="w-[10%] min-w-[80px]">Created</TableHead>
+                  <TableHead className="w-[18%] min-w-[120px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,63 +160,74 @@ export const TasksList = () => {
                   console.log('Rendering task row:', task.id, task.title);
                   return (
                     <TableRow key={task.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div className="font-medium text-sm">{task.title}</div>
+                      <TableCell className="font-medium w-[25%]">
+                        <div className="max-w-[150px]">
+                          <div className="font-medium text-sm truncate" title={task.title}>
+                            {task.title}
+                          </div>
                           {task.description && (
-                            <div className="text-xs text-gray-500 truncate max-w-xs" title={task.description}>
+                            <div className="text-xs text-gray-500 truncate" title={task.description}>
                               {task.description}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {task.students?.name || 'Unassigned'}
+                      <TableCell className="w-[20%]">
+                        <div className="text-sm max-w-[120px]">
+                          <div className="truncate" title={task.students?.name || 'Unassigned'}>
+                            {task.students?.name || 'Unassigned'}
+                          </div>
                           {task.students?.email && (
-                            <div className="text-xs text-gray-500">{task.students.email}</div>
+                            <div className="text-xs text-gray-500 truncate" title={task.students.email}>
+                              {task.students.email}
+                            </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{task.subjects?.name || 'No Subject'}</span>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(task.status)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-500">
-                          {new Date(task.created_at).toLocaleDateString()}
+                      <TableCell className="w-[15%]">
+                        <span className="text-sm truncate max-w-[100px] block" title={task.subjects?.name || 'No Subject'}>
+                          {task.subjects?.name || 'No Subject'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="w-[12%]">
+                        {getStatusBadge(task.status)}
+                      </TableCell>
+                      <TableCell className="w-[10%]">
+                        <span className="text-xs text-gray-500">
+                          {new Date(task.created_at).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right w-[18%]">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setEditingTask(task)}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 p-0"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3 w-3" />
                             <span className="sr-only">Edit task</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setAssigningTask(task)}
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
-                            <UserPlus className="h-4 w-4" />
+                            <UserPlus className="h-3 w-3" />
                             <span className="sr-only">Assign to student</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setBulkAssigningTask(task)}
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                             title="Assign to multiple students"
                           >
-                            <Users className="h-4 w-4" />
+                            <Users className="h-3 w-3" />
                             <span className="sr-only">Assign to multiple students</span>
                           </Button>
                           <Button
@@ -226,9 +237,9 @@ export const TasksList = () => {
                               console.log('Setting task for deletion:', task.id, task.title);
                               setDeletingTask(task);
                             }}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                             <span className="sr-only">Delete task</span>
                           </Button>
                         </div>
