@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 
 const items = [
   { title: 'Dashboard', url: '/', icon: Home },
-  { title: 'Settings', url: '/settings', icon: Settings, teacherOnly: true },
+  { title: 'Manage Tasks', url: '/settings', icon: Settings, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 
