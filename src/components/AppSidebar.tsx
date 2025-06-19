@@ -53,8 +53,8 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!isCollapsed && (
           <div>
-            <h2 className="text-lg font-semibold text-blue-700">Montessori Tracker</h2>
-            <p className="text-xs text-gray-500">Learning Journey Manager</p>
+            <h2 className="text-lg font-semibold text-blue-700">ARCC</h2>
+            <p className="text-xs text-gray-500">Student Progress Tracker</p>
           </div>
         )}
       </SidebarHeader>
