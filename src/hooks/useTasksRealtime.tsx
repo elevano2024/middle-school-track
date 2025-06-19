@@ -3,26 +3,29 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
+let globalChannel: any = null;
+let subscriberCount = 0;
+
 export const useTasksRealtime = () => {
   const queryClient = useQueryClient();
-  const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const hasSubscribed = useRef(false);
 
   useEffect(() => {
-    console.log('=== SETTING UP REAL-TIME SUBSCRIPTION ===');
-    
-    // Clean up existing subscription if it exists
-    if (channelRef.current) {
-      console.log('=== CLEANING UP EXISTING SUBSCRIPTION ===');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+    // Prevent multiple subscriptions from the same component
+    if (hasSubscribed.current) {
+      console.log('=== ALREADY SUBSCRIBED TO REAL-TIME ===');
+      return;
     }
 
-    // Only create subscription if we don't already have one
-    if (!isSubscribedRef.current) {
-      const channel = supabase
-        .channel('tasks-changes')
+    console.log('=== SETTING UP REAL-TIME SUBSCRIPTION ===');
+    subscriberCount++;
+    hasSubscribed.current = true;
+
+    // Create global channel if it doesn't exist
+    if (!globalChannel) {
+      console.log('=== CREATING NEW GLOBAL CHANNEL ===');
+      globalChannel = supabase
+        .channel('tasks-changes-global')
         .on(
           'postgres_changes',
           {
@@ -40,26 +43,26 @@ export const useTasksRealtime = () => {
         );
 
       // Subscribe to the channel
-      channel.subscribe((status) => {
+      globalChannel.subscribe((status: string) => {
         console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
         console.log('Status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
       });
-
-      channelRef.current = channel;
+    } else {
+      console.log('=== USING EXISTING GLOBAL CHANNEL ===');
     }
 
     // Cleanup function
     return () => {
       console.log('=== CLEANING UP REAL-TIME SUBSCRIPTION ===');
-      if (channelRef.current) {
-        console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
-        console.log('Status:', channelRef.current.state);
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        isSubscribedRef.current = false;
+      subscriberCount--;
+      hasSubscribed.current = false;
+
+      // Only cleanup the global channel if no more subscribers
+      if (subscriberCount <= 0 && globalChannel) {
+        console.log('=== REMOVING GLOBAL CHANNEL ===');
+        supabase.removeChannel(globalChannel);
+        globalChannel = null;
+        subscriberCount = 0;
       }
     };
   }, []); // Empty dependency array to run only once

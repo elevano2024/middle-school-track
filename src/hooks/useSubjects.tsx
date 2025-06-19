@@ -28,10 +28,12 @@ const fetchSubjects = async (): Promise<Subject[]> => {
   return data || [];
 };
 
+let globalSubjectsChannel: any = null;
+let subjectsSubscriberCount = 0;
+
 export const useSubjects = () => {
   const queryClient = useQueryClient();
-  const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const hasSubscribed = useRef(false);
 
   const query = useQuery({
     queryKey: ['subjects'],
@@ -39,20 +41,21 @@ export const useSubjects = () => {
   });
 
   useEffect(() => {
-    console.log('useSubjects: Setting up real-time subscription');
-    
-    // Clean up existing subscription if it exists
-    if (channelRef.current) {
-      console.log('useSubjects: Cleaning up existing subscription');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+    // Prevent multiple subscriptions from the same component
+    if (hasSubscribed.current) {
+      console.log('useSubjects: Already subscribed to real-time');
+      return;
     }
 
-    // Only create subscription if we don't already have one
-    if (!isSubscribedRef.current) {
-      const channel = supabase
-        .channel('subjects-changes')
+    console.log('useSubjects: Setting up real-time subscription');
+    subjectsSubscriberCount++;
+    hasSubscribed.current = true;
+
+    // Create global channel if it doesn't exist
+    if (!globalSubjectsChannel) {
+      console.log('useSubjects: Creating new global channel');
+      globalSubjectsChannel = supabase
+        .channel('subjects-changes-global')
         .on(
           'postgres_changes',
           {
@@ -66,23 +69,24 @@ export const useSubjects = () => {
           }
         );
 
-      channel.subscribe((status) => {
+      globalSubjectsChannel.subscribe((status: string) => {
         console.log('useSubjects: Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
       });
-
-      channelRef.current = channel;
+    } else {
+      console.log('useSubjects: Using existing global channel');
     }
 
     return () => {
       console.log('useSubjects: Cleaning up real-time subscription');
-      if (channelRef.current) {
-        console.log('useSubjects: Subscription status:', channelRef.current.state);
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        isSubscribedRef.current = false;
+      subjectsSubscriberCount--;
+      hasSubscribed.current = false;
+
+      // Only cleanup the global channel if no more subscribers
+      if (subjectsSubscriberCount <= 0 && globalSubjectsChannel) {
+        console.log('useSubjects: Removing global channel');
+        supabase.removeChannel(globalSubjectsChannel);
+        globalSubjectsChannel = null;
+        subjectsSubscriberCount = 0;
       }
     };
   }, [queryClient]);

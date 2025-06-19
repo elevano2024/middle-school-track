@@ -6,6 +6,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useTasksRealtime } from '@/hooks/useTasksRealtime';
 import { Task } from '@/types/task';
 
+export { Task };
+
 export const useTasks = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent } = useUserRole();
