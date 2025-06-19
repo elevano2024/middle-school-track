@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ClipboardList, Loader2 } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskCard from './TaskCard';
+import type { Task as WorkflowTask } from '@/types/workflow';
 
 const StudentDashboard = () => {
   const { tasks, loading, error, updateTaskStatus } = useTasks();
@@ -52,6 +53,17 @@ const StudentDashboard = () => {
     );
   }
 
+  // Transform database tasks to workflow tasks for TaskCard compatibility
+  const workflowTasks: WorkflowTask[] = tasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description || '',
+    status: task.status as WorkflowTask['status'],
+    studentId: task.student_id,
+    subject: task.subjects?.name || 'No Subject',
+    timeInStatus: task.time_in_status || 0
+  }));
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -61,7 +73,7 @@ const StudentDashboard = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {tasks.map(task => (
+          {workflowTasks.map(task => (
             <TaskCard
               key={task.id}
               task={task}

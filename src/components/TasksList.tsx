@@ -51,17 +51,17 @@ export const TasksList = () => {
   if (loading) {
     console.log('TasksList: Rendering loading state');
     return (
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-2">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
           <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" />
+            <ClipboardList className="h-6 w-6" />
             Learning Activities
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8">
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-            <span className="ml-2">Loading activities...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-lg font-medium">Loading activities...</span>
           </div>
         </CardContent>
       </Card>
@@ -71,11 +71,11 @@ export const TasksList = () => {
   if (tasks.length === 0) {
     console.log('TasksList: Rendering empty state');
     return (
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-2">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
+              <ClipboardList className="h-6 w-6" />
               Learning Activities
             </CardTitle>
             <Button
@@ -83,17 +83,17 @@ export const TasksList = () => {
               size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 hover:bg-white/80"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="sr-only">Refresh activities</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <Alert>
-            <ClipboardList className="h-4 w-4" />
-            <AlertDescription>
+        <CardContent className="p-8">
+          <Alert className="border-blue-200 bg-blue-50">
+            <ClipboardList className="h-5 w-5 text-blue-600" />
+            <AlertDescription className="text-blue-800 font-medium">
               No learning activities found. Create your first activity using the form above.
             </AlertDescription>
           </Alert>
@@ -106,16 +106,16 @@ export const TasksList = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      working: { label: 'Working', className: 'bg-blue-100 text-blue-800' },
-      'need-help': { label: 'Need Help', className: 'bg-red-100 text-red-800' },
-      'ready-review': { label: 'Ready Review', className: 'bg-yellow-100 text-yellow-800' },
-      completed: { label: 'Completed', className: 'bg-green-100 text-green-800' }
+      working: { label: 'Working', className: 'bg-blue-500 text-white hover:bg-blue-600' },
+      'need-help': { label: 'Need Help', className: 'bg-red-500 text-white hover:bg-red-600' },
+      'ready-review': { label: 'Ready Review', className: 'bg-yellow-500 text-white hover:bg-yellow-600' },
+      completed: { label: 'Completed', className: 'bg-green-500 text-white hover:bg-green-600' }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-500 text-white' };
     
     return (
-      <Badge variant="secondary" className={`text-xs ${config.className}`}>
+      <Badge className={`font-medium px-3 py-1 ${config.className}`}>
         {config.label}
       </Badge>
     );
@@ -123,11 +123,11 @@ export const TasksList = () => {
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-2 border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-100">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
+            <CardTitle className="text-2xl text-blue-700 flex items-center gap-3 font-bold">
+              <ClipboardList className="h-7 w-7" />
               Learning Activities ({tasks.length})
             </CardTitle>
             <Button
@@ -135,67 +135,77 @@ export const TasksList = () => {
               size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 hover:bg-white/80 border border-blue-200"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="sr-only">Refresh activities</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Activity Name</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-gray-50 hover:bg-gray-50 border-b-2">
+                  <TableHead className="font-bold text-gray-700 text-base py-4 px-6">Activity Name</TableHead>
+                  <TableHead className="font-bold text-gray-700 text-base py-4 px-6">Student</TableHead>
+                  <TableHead className="font-bold text-gray-700 text-base py-4 px-6">Subject</TableHead>
+                  <TableHead className="font-bold text-gray-700 text-base py-4 px-6">Status</TableHead>
+                  <TableHead className="font-bold text-gray-700 text-base py-4 px-6">Created</TableHead>
+                  <TableHead className="text-right font-bold text-gray-700 text-base py-4 px-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tasks.map((task) => {
+                {tasks.map((task, index) => {
                   console.log('Rendering task row:', task.id, task.title);
                   return (
-                    <TableRow key={task.id}>
-                      <TableCell className="font-medium">
+                    <TableRow 
+                      key={task.id} 
+                      className={`hover:bg-blue-50 transition-colors border-b ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                      }`}
+                    >
+                      <TableCell className="font-medium py-4 px-6">
                         <div>
-                          <div className="font-medium text-sm">{task.title}</div>
+                          <div className="font-semibold text-gray-900 text-base mb-1">{task.title}</div>
                           {task.description && (
-                            <div className="text-xs text-gray-500 truncate max-w-xs" title={task.description}>
+                            <div className="text-sm text-gray-600 line-clamp-2 max-w-xs" title={task.description}>
                               {task.description}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {task.students?.name || 'Unassigned'}
+                      <TableCell className="py-4 px-6">
+                        <div className="text-base">
+                          <div className="font-medium text-gray-900">
+                            {task.students?.name || 'Unassigned'}
+                          </div>
                           {task.students?.email && (
-                            <div className="text-xs text-gray-500">{task.students.email}</div>
+                            <div className="text-sm text-gray-500">{task.students.email}</div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{task.subjects?.name || 'No Subject'}</span>
+                      <TableCell className="py-4 px-6">
+                        <span className="text-base font-medium text-gray-800 bg-gray-100 px-3 py-1 rounded-full">
+                          {task.subjects?.name || 'No Subject'}
+                        </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-4 px-6">
                         {getStatusBadge(task.status)}
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-500">
+                      <TableCell className="py-4 px-6">
+                        <span className="text-base text-gray-600 font-medium">
                           {new Date(task.created_at).toLocaleDateString()}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-right py-4 px-6">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setEditingTask(task)}
-                            className="h-8 w-8 p-0"
+                            className="h-9 w-9 p-0 hover:bg-blue-100 text-blue-600"
+                            title="Edit task"
                           >
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Edit task</span>
@@ -204,7 +214,8 @@ export const TasksList = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => setAssigningTask(task)}
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="h-9 w-9 p-0 text-green-600 hover:bg-green-100"
+                            title="Assign to student"
                           >
                             <UserPlus className="h-4 w-4" />
                             <span className="sr-only">Assign to student</span>
@@ -213,7 +224,7 @@ export const TasksList = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => setBulkAssigningTask(task)}
-                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="h-9 w-9 p-0 text-purple-600 hover:bg-purple-100"
                             title="Assign to multiple students"
                           >
                             <Users className="h-4 w-4" />
@@ -226,7 +237,8 @@ export const TasksList = () => {
                               console.log('Setting task for deletion:', task.id, task.title);
                               setDeletingTask(task);
                             }}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-9 w-9 p-0 text-red-600 hover:bg-red-100"
+                            title="Delete task"
                           >
                             <Trash2 className="h-4 w-4" />
                             <span className="sr-only">Delete task</span>
