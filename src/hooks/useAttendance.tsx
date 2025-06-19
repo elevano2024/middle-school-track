@@ -87,22 +87,8 @@ export const useAttendance = (date?: string) => {
     fetchAttendance();
   }, [user, isAdmin, isTeacher, date]);
 
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!user || (!isAdmin && !isTeacher)) return;
-
-    const channel = supabase
-      .channel('attendance-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
-        console.log('Attendance data changed, refetching...');
-        fetchAttendance();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, isAdmin, isTeacher, date]);
+  // Real-time subscription is now handled centrally in useRealtimeSubscriptions
+  // No individual subscription needed here
 
   const getAttendanceForStudent = (studentId: string) => {
     return attendance.find(record => record.student_id === studentId);

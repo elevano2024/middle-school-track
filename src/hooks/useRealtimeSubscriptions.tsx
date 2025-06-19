@@ -44,6 +44,32 @@ export const useRealtimeSubscriptions = () => {
           console.log('Payload:', payload);
           queryClient.invalidateQueries({ queryKey: ['subjects'] });
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'students'
+        },
+        (payload) => {
+          console.log('=== REAL-TIME STUDENT CHANGE DETECTED ===');
+          console.log('Payload:', payload);
+          queryClient.invalidateQueries({ queryKey: ['students'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance'
+        },
+        (payload) => {
+          console.log('=== REAL-TIME ATTENDANCE CHANGE DETECTED ===');
+          console.log('Payload:', payload);
+          queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        }
       );
 
     // Subscribe to the channel
