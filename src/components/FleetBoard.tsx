@@ -110,7 +110,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
             {attentionNeeded.map((item, index) => (
               <li key={index} className="text-sm text-yellow-700">
                 <strong>{item.studentName}</strong> - {item.subject}: {item.taskTitle} 
-                <span className="text-yellow-600"> (needs help for {item.timeInStatus} minutes)</span>
+                <span className="text-yellow-600"> (needs help for {item.timeNeedingHelp} minutes)</span>
               </li>
             ))}
           </ul>
