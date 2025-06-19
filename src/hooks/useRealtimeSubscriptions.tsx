@@ -2,23 +2,29 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Global flag to prevent multiple initializations across the entire app
+let globalInitialized = false;
+let globalChannel: any = null;
 
 export const useRealtimeSubscriptions = () => {
   const queryClient = useQueryClient();
-  const channelRef = useRef<any>(null);
+  const { user } = useAuth();
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple initializations
-    if (isInitializedRef.current) {
+    // Only initialize if user is authenticated and we haven't initialized globally
+    if (!user || globalInitialized || isInitializedRef.current) {
       return;
     }
 
     console.log('=== INITIALIZING REAL-TIME SUBSCRIPTIONS ===');
     
-    // Create a single channel for all real-time updates
+    // Create a single channel for all real-time updates with a unique name
+    const channelName = `database-changes-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel('database-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -77,22 +83,34 @@ export const useRealtimeSubscriptions = () => {
       console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
       console.log('Status:', status);
       if (status === 'SUBSCRIBED') {
+        globalInitialized = true;
         isInitializedRef.current = true;
+        globalChannel = channel;
       }
     });
-
-    channelRef.current = channel;
 
     // Cleanup function
     return () => {
       console.log('=== CLEANING UP REAL-TIME SUBSCRIPTIONS ===');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        isInitializedRef.current = false;
+      if (globalChannel) {
+        supabase.removeChannel(globalChannel);
+        globalChannel = null;
       }
+      globalInitialized = false;
+      isInitializedRef.current = false;
     };
-  }, [queryClient]);
+  }, [queryClient, user]);
+
+  // Clean up on user logout
+  useEffect(() => {
+    if (!user && globalChannel) {
+      console.log('=== USER LOGGED OUT - CLEANING UP SUBSCRIPTIONS ===');
+      supabase.removeChannel(globalChannel);
+      globalChannel = null;
+      globalInitialized = false;
+      isInitializedRef.current = false;
+    }
+  }, [user]);
 
   return null;
 };
