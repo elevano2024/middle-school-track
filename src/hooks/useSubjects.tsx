@@ -1,74 +1,96 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 
 export interface Subject {
   id: string;
   name: string;
+  color: string | null;
   created_at: string;
 }
 
+const fetchSubjects = async (): Promise<Subject[]> => {
+  console.log('useSubjects: Fetching subjects from database...');
+  
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('*')
+    .order('name');
+
+  if (error) {
+    console.error('useSubjects: Error fetching subjects:', error);
+    throw error;
+  }
+
+  console.log('useSubjects: Successfully fetched subjects:', data);
+  return data || [];
+};
+
 export const useSubjects = () => {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
-  const fetchSubjects = useCallback(async () => {
-    try {
-      console.log('useSubjects: Fetching subjects...');
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('*')
-        .order('name');
+  const query = useQuery({
+    queryKey: ['subjects'],
+    queryFn: fetchSubjects,
+  });
 
-      if (error) {
-        console.error('useSubjects: Error fetching subjects:', error);
-        setSubjects([]);
-      } else {
-        console.log('useSubjects: Successfully fetched subjects:', data);
-        setSubjects(data || []);
-      }
-    } catch (error) {
-      console.error('useSubjects: Error fetching subjects:', error);
-      setSubjects([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Initial fetch
-    console.log('useSubjects: Initial fetch triggered');
-    fetchSubjects();
-  }, [fetchSubjects]);
-
-  // Set up real-time subscription
   useEffect(() => {
     console.log('useSubjects: Setting up real-time subscription');
     
-    const channel = supabase
-      .channel('subjects-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'subjects' 
-      }, (payload) => {
-        console.log('useSubjects: Real-time change detected:', payload);
-        console.log('Event type:', payload.eventType);
-        
-        // Refetch subjects when any change occurs
-        fetchSubjects();
-      })
-      .subscribe((status) => {
+    // Clean up existing subscription if it exists
+    if (channelRef.current) {
+      console.log('useSubjects: Cleaning up existing subscription');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+
+    // Only create subscription if we don't already have one
+    if (!isSubscribedRef.current) {
+      const channel = supabase
+        .channel('subjects-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'subjects'
+          },
+          (payload) => {
+            console.log('useSubjects: Real-time change detected:', payload);
+            queryClient.invalidateQueries({ queryKey: ['subjects'] });
+          }
+        );
+
+      channel.subscribe((status) => {
         console.log('useSubjects: Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
       });
+
+      channelRef.current = channel;
+    }
 
     return () => {
       console.log('useSubjects: Cleaning up real-time subscription');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        console.log('useSubjects: Subscription status:', channelRef.current.state);
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
+      }
     };
-  }, [fetchSubjects]);
+  }, [queryClient]);
 
-  return { subjects, loading, refetch: fetchSubjects };
+  return {
+    subjects: query.data || [],
+    loading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 };

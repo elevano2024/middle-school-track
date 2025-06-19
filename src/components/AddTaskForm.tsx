@@ -128,10 +128,10 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Child</Label>
+          <Label>Student</Label>
           <Select onValueChange={(value) => setValue('student_id', value)} value={selectedStudentId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a child" />
+              <SelectValue placeholder="Select a Student" />
             </SelectTrigger>
             <SelectContent>
               {students.map((student) => (
@@ -142,7 +142,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
             </SelectContent>
           </Select>
           {errors.student_id && (
-            <p className="text-sm text-red-600">Please select a child</p>
+            <p className="text-sm text-red-600">Please select a Student</p>
           )}
         </div>
 
