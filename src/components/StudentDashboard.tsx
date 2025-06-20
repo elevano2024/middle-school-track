@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ClipboardList } from 'lucide-react';
@@ -10,10 +9,17 @@ import TaskCard from './TaskCard';
 import TaskCardSkeleton from './TaskCardSkeleton';
 import LoadingSpinner from './LoadingSpinner';
 import SummaryHeader from './SummaryHeader';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const StudentDashboard = () => {
   const { tasks, loading, error, updateTaskStatus } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
+  const { setOpen } = useSidebar();
+
+  // Collapse sidebar on component mount for better table display
+  useEffect(() => {
+    setOpen(false);
+  }, [setOpen]);
 
   if (loading || subjectsLoading) {
     return (
