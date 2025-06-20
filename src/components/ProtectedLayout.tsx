@@ -14,7 +14,7 @@ interface ProtectedLayoutProps {
 
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const { user, loading, signOut } = useAuth();
-  const { isStudent, loading: roleLoading } = useUserRole();
+  const { isStudent, isAdmin, isTeacher, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,8 +24,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     }
   }, [user, loading, navigate, location]);
 
-  // Only show loading for overall auth state, not for role determination
-  if (loading) {
+  // Show loading for both auth and role determination
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -43,8 +43,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     await signOut();
   };
 
-  // Student layout without sidebar - only show this if we know for sure the user is a student
-  if (isStudent && !roleLoading) {
+  // Student layout without sidebar - only show after role is determined
+  if (isStudent) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Top Navbar */}
@@ -80,19 +80,39 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Admin/Teacher layout with sidebar - render immediately for non-students
+  // Admin/Teacher layout with sidebar - only show after role is determined
+  if (isAdmin || isTeacher) {
+    return (
+      <>
+        <AppSidebar />
+        <main className="flex-1 overflow-auto">
+          <header className="h-12 flex items-center border-b bg-white px-4">
+            <SidebarTrigger />
+          </header>
+          <div className="p-6">
+            {children}
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Default fallback for users without roles
   return (
-    <>
-      <AppSidebar />
-      <main className="flex-1 overflow-auto">
-        <header className="h-12 flex items-center border-b bg-white px-4">
-          <SidebarTrigger />
-        </header>
-        <div className="p-6">
-          {children}
-        </div>
-      </main>
-    </>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="text-center">
+        <p className="text-gray-600">No role assigned. Please contact an administrator.</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSignOut}
+          className="mt-4"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
+    </div>
   );
 };
 
