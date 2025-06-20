@@ -21,6 +21,10 @@ export const useRealtimeSubscriptions = () => {
 
     console.log('=== INITIALIZING REAL-TIME SUBSCRIPTIONS ===');
     
+    // Mark as initialized immediately to prevent race conditions
+    globalInitialized = true;
+    isInitializedRef.current = true;
+    
     // Create a single channel for all real-time updates with a unique name
     const channelName = `database-changes-${user.id}-${Date.now()}`;
     const channel = supabase
@@ -83,9 +87,12 @@ export const useRealtimeSubscriptions = () => {
       console.log('=== REAL-TIME SUBSCRIPTION STATUS ===');
       console.log('Status:', status);
       if (status === 'SUBSCRIBED') {
-        globalInitialized = true;
-        isInitializedRef.current = true;
         globalChannel = channel;
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('=== REAL-TIME SUBSCRIPTION ERROR ===');
+        // Reset flags on error to allow retry
+        globalInitialized = false;
+        isInitializedRef.current = false;
       }
     });
 

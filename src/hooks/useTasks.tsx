@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchTasksFromDatabase, updateTaskStatusInDatabase } from '@/utils/taskApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useRealtimeSubscriptions } from '@/hooks/useRealtimeSubscriptions';
 import { Task, TaskStatus } from '@/types/task';
 
 export const useTasks = () => {
@@ -11,8 +10,7 @@ export const useTasks = () => {
   const { isAdmin, isTeacher, isStudent } = useUserRole();
   const queryClient = useQueryClient();
 
-  // Set up real-time subscription (centralized)
-  useRealtimeSubscriptions();
+  // Remove the real-time subscription call - it's handled at app level now
 
   const query = useQuery({
     queryKey: ['tasks', user?.id, isAdmin, isTeacher, isStudent],
