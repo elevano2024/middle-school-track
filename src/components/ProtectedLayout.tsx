@@ -24,8 +24,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     }
   }, [user, loading, navigate, location]);
 
-  // Show loading for both auth and role determination
-  if (loading || roleLoading) {
+  // Only show loading for auth state, not role determination
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -43,7 +43,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     await signOut();
   };
 
-  // Student layout without sidebar - only show after role is determined
+  // Student layout without sidebar - show immediately, let Index page handle role loading
   if (isStudent) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -80,8 +80,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Admin/Teacher layout with sidebar - only show after role is determined
-  if (isAdmin || isTeacher) {
+  // Admin/Teacher layout with sidebar - show immediately, let Index page handle role loading
+  if (isAdmin || isTeacher || !roleLoading) {
     return (
       <>
         <AppSidebar />
@@ -97,20 +97,11 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Default fallback for users without roles
+  // Minimal fallback while role loads - no loading spinner
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="text-center">
-        <p className="text-gray-600">No role assigned. Please contact an administrator.</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleSignOut}
-          className="mt-4"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6">
+        {children}
       </div>
     </div>
   );
