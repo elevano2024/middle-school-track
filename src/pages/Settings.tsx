@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,19 +12,14 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
 
 const Settings = () => {
-  const { isTeacher, isAdmin, loading } = useUserRole();
+  const { isTeacher, isAdmin, loading: roleLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState('subjects');
   const { refetch: refetchSubjects } = useSubjects();
   const { refetch: refetchTasks } = useTasks();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+  // Wait for role loading to complete before checking permissions
+  if (roleLoading) {
+    return null; // Let the central loading handle this
   }
 
   // Only teachers and admins can access this page
@@ -48,7 +42,7 @@ const Settings = () => {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Montessori Settings</h1>
+          <h1 className="text-3xl font-bold text-gray-900">ARCC Task Management</h1>
         </div>
         <p className="text-gray-600">Manage subjects and learning activities for your students</p>
       </div>

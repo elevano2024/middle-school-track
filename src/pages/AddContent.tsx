@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,18 +7,8 @@ import { AddSubjectForm } from '@/components/AddSubjectForm';
 import { AddTaskForm } from '@/components/AddTaskForm';
 
 const AddContent = () => {
-  const { isTeacher, isAdmin, loading } = useUserRole();
+  const { isTeacher, isAdmin } = useUserRole();
   const [activeTab, setActiveTab] = useState('subjects');
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Only teachers and admins can access this page
   if (!isTeacher && !isAdmin) {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,17 +13,17 @@ export interface Student {
 
 export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const { isAdmin, isTeacher } = useUserRole();
+  const { isAdmin, isTeacher, loading: roleLoading } = useUserRole();
 
   const fetchStudents = async () => {
-    if (!user || (!isAdmin && !isTeacher)) {
-      setLoading(false);
+    if (roleLoading || !user || (!isAdmin && !isTeacher)) {
       return;
     }
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('students')
         .select('*')
@@ -43,8 +42,10 @@ export const useStudents = () => {
   };
 
   useEffect(() => {
-    fetchStudents();
-  }, [user, isAdmin, isTeacher]);
+    if (!roleLoading && user && (isAdmin || isTeacher)) {
+      fetchStudents();
+    }
+  }, [user, isAdmin, isTeacher, roleLoading]);
 
   // Note: Real-time subscription is now handled by useRealtimeSubscriptions hook
 

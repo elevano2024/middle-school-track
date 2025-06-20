@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { supabase } from '@/integrations/supabase/client';
+import { useTasks } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
 import { useSubjects } from '@/hooks/useSubjects';
 import {
   Dialog,
@@ -31,8 +30,7 @@ interface EditTaskDialogProps {
 }
 
 export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const { updateTask, isUpdating } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TaskFormData>();
 
@@ -51,42 +49,17 @@ export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps
   const onSubmit = async (data: TaskFormData) => {
     if (!task) return;
     
-    setIsSubmitting(true);
-    
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          title: data.title,
-          description: data.description || null,
-          subject_id: data.subject_id
-        })
-        .eq('id', task.id);
+    const updates = {
+      title: data.title,
+      description: data.description || null,
+      subject_id: data.subject_id
+    };
 
-      if (error) {
-        console.error('Error updating task:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update learning activity. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Learning activity updated successfully!",
-        });
-        onOpenChange(false);
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update learning activity. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Use optimistic update method
+    updateTask({ taskId: task.id, updates });
+    
+    // Close dialog immediately - optimistic update handles the UI
+    onOpenChange(false);
   };
 
   if (subjectsLoading) {
@@ -152,8 +125,8 @@ export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save changes'}
+            <Button type="submit" disabled={isUpdating}>
+              {isUpdating ? 'Saving...' : 'Save changes'}
             </Button>
           </DialogFooter>
         </form>

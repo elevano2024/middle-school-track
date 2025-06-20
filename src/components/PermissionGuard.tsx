@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 
@@ -18,17 +16,10 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
 }) => {
   const { role, loading, isAdmin, isTeacher } = useUserRole();
 
-  // Show loading while checking permissions
+  // Don't show individual loading since it's handled centrally
+  // If still loading, render nothing and let the central loading handle it
   if (loading) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-6">
-            <LoadingSpinner text="Loading..." />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   // Check if user has required role

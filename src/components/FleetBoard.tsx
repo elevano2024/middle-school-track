@@ -1,9 +1,10 @@
-
 import React from 'react';
 import { Student, Task, TaskStatus } from '../types/workflow';
 import TaskCard from './TaskCard';
 import AttendanceIndicator from './AttendanceIndicator';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+
+type StatusFilter = TaskStatus | 'all';
 
 interface FleetBoardProps {
   students: Student[];
@@ -11,6 +12,7 @@ interface FleetBoardProps {
   tasks: Task[];
   onUpdateTaskStatus: (taskId: string, newStatus: TaskStatus) => Promise<boolean>;
   getTasksForStudent: (studentId: string) => Task[];
+  statusFilter?: StatusFilter;
 }
 
 const FleetBoard: React.FC<FleetBoardProps> = ({
@@ -18,15 +20,22 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   subjects,
   tasks,
   onUpdateTaskStatus,
-  getTasksForStudent
+  getTasksForStudent,
+  statusFilter = 'all'
 }) => {
-  console.log('FleetBoard props:', { students, subjects, tasks });
+  console.log('FleetBoard props:', { students, subjects, tasks, statusFilter });
 
   const getTasksForStudentAndSubject = (studentId: string, subject: string): Task[] => {
     const studentTasks = tasks.filter(task => task.studentId === studentId);
     const subjectTasks = studentTasks.filter(task => task.subject === subject);
-    console.log(`Tasks for student ${studentId} and subject ${subject}:`, subjectTasks);
-    return subjectTasks;
+    
+    // Filter by status if a filter is active
+    const filteredTasks = statusFilter === 'all' 
+      ? subjectTasks 
+      : subjectTasks.filter(task => task.status === statusFilter);
+    
+    console.log(`Tasks for student ${studentId} and subject ${subject} (filter: ${statusFilter}):`, filteredTasks);
+    return filteredTasks;
   };
 
   const getStudentsNeedingAttention = () => {
@@ -47,10 +56,31 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
 
   const attentionNeeded = getStudentsNeedingAttention();
 
+  // Get the display text for the current filter
+  const getFilterDisplayText = () => {
+    switch (statusFilter) {
+      case 'working': return 'Working';
+      case 'need-help': return 'Need Help';
+      case 'ready-review': return 'Ready for Review';
+      case 'completed': return 'Completed';
+      default: return 'tasks';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Fleet Board Grid */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Filter indicator for the table */}
+        {statusFilter !== 'all' && (
+          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+            <p className="text-sm text-blue-700">
+              <span className="font-medium">Filtered View:</span> Only showing{' '}
+              <span className="font-semibold">{getFilterDisplayText()}</span> tasks and relevant students/subjects
+            </p>
+          </div>
+        )}
+        
         <ScrollArea className="w-full">
           <div className="min-w-fit">
             <table className="w-full">
@@ -88,9 +118,13 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                                   onUpdateStatus={onUpdateTaskStatus}
                                 />
                               ))
-                            ) : (
+                            ) : statusFilter === 'all' ? (
                               <div className="text-center py-4 text-sm text-gray-400">
                                 No tasks assigned
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-sm text-gray-300 italic">
+                                —
                               </div>
                             )}
                           </div>

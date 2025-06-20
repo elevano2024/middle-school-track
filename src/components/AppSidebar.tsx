@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Home, Users, LogOut, Settings } from 'lucide-react';
+import { Home, Users, LogOut, Settings, UserCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -20,7 +19,8 @@ import { Button } from '@/components/ui/button';
 
 const items = [
   { title: 'Dashboard', url: '/', icon: Home },
-  { title: 'Settings', url: '/settings', icon: Settings, teacherOnly: true },
+  { title: 'Attendance', url: '/attendance', icon: UserCheck, teacherOnly: true },
+  { title: 'Manage Tasks', url: '/settings', icon: Settings, teacherOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 
