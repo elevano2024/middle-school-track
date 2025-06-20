@@ -5,7 +5,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ClipboardList } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import { useSubjects } from '@/hooks/useSubjects';
-import SubjectTaskWidget from './SubjectTaskWidget';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import TaskCard from './TaskCard';
 import TaskCardSkeleton from './TaskCardSkeleton';
 import LoadingSpinner from './LoadingSpinner';
 import SummaryHeader from './SummaryHeader';
@@ -19,8 +20,8 @@ const StudentDashboard = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
-            <p className="text-gray-600">Complete your assigned activities at your own pace</p>
+            <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+            <p className="text-gray-600">Track your progress and update your task status</p>
           </div>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -50,8 +51,8 @@ const StudentDashboard = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
-            <p className="text-gray-600">Complete your assigned activities at your own pace</p>
+            <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+            <p className="text-gray-600">Track your progress and update your task status</p>
           </div>
           
           <Alert>
@@ -92,26 +93,48 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-full mx-auto space-y-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
-          <p className="text-gray-600">Complete your assigned activities at your own pace</p>
+          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
+          <p className="text-gray-600">Track your progress and update your task status</p>
         </div>
 
         {/* Summary Header */}
         <SummaryHeader tasks={convertedTasks} />
 
-        {/* Subject-based task organization */}
-        <div className="space-y-6">
-          {subjectsWithTasks.map(subjectName => (
-            <SubjectTaskWidget
-              key={subjectName}
-              subjectName={subjectName}
-              tasks={tasksBySubject[subjectName]}
-              onUpdateTaskStatus={updateTaskStatus}
-            />
-          ))}
-        </div>
+        {/* Table Layout - Original Design */}
+        <Card className="w-full">
+          <CardContent className="p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {subjectsWithTasks.map(subject => (
+                    <TableHead key={subject} className="text-center font-semibold">
+                      {subject}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  {subjectsWithTasks.map(subject => (
+                    <TableCell key={subject} className="align-top p-4">
+                      <div className="space-y-3">
+                        {tasksBySubject[subject].map(task => (
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            onUpdateStatus={updateTaskStatus}
+                          />
+                        ))}
+                      </div>
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         {subjectsWithTasks.length === 0 && (
           <Alert>
