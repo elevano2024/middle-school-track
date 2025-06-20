@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useRealtimeSubscriptions } from "@/hooks/useRealtimeSubscriptions";
 import ProtectedLayout from "@/components/ProtectedLayout";
@@ -26,18 +27,20 @@ const AppWithRealtime = () => {
       <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route path="/*" element={
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <ProtectedLayout>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/users" element={<UserManagement />} />
-                  <Route path="/add-content" element={<AddContent />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Routes>
-              </ProtectedLayout>
-            </div>
-          </SidebarProvider>
+          <LoadingProvider>
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full">
+                <ProtectedLayout>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/users" element={<UserManagement />} />
+                    <Route path="/add-content" element={<AddContent />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Routes>
+                </ProtectedLayout>
+              </div>
+            </SidebarProvider>
+          </LoadingProvider>
         } />
         <Route path="*" element={<NotFound />} />
       </Routes>

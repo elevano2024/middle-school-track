@@ -7,32 +7,22 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ProtectedLayoutProps {
   children: React.ReactNode;
 }
 
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
-  const { user, loading, signOut } = useAuth();
-  const { isStudent, isAdmin, isTeacher, loading: roleLoading } = useUserRole();
+  const { user, signOut } = useAuth();
+  const { isStudent, isAdmin, isTeacher } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
 
   React.useEffect(() => {
-    if (!loading && !user && location.pathname !== '/auth') {
+    if (!user && location.pathname !== '/auth') {
       navigate('/auth');
     }
-  }, [user, loading, navigate, location]);
-
-  // Show single loading state while auth or role is being determined
-  if (loading || (user && roleLoading)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
-  }
+  }, [user, navigate, location]);
 
   if (!user) {
     return null;
@@ -46,7 +36,6 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   if (isStudent) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Top Navbar for Students */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -71,7 +60,6 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="flex-1">
           {children}
         </main>

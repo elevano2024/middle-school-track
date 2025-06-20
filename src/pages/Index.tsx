@@ -5,30 +5,25 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
-import { useAttendance } from '@/hooks/useAttendance';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
-import FleetBoardSkeleton from '../components/FleetBoardSkeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 
 const Index = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent } = useUserRole();
-  const { students, loading: studentsLoading } = useStudents();
-  const { subjects, loading: subjectsLoading } = useSubjects();
-  const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
-  const { loading: attendanceLoading } = useAttendance();
+  const { students } = useStudents();
+  const { subjects } = useSubjects();
+  const { tasks, updateTaskStatus } = useTasks();
 
   // Add debugging for subjects data
   React.useEffect(() => {
     console.log('Index: User roles:', { isAdmin, isTeacher, isStudent });
     console.log('Index: Subjects data:', subjects);
-    console.log('Index: Subjects loading:', subjectsLoading);
     console.log('Index: Tasks data length:', tasks.length);
-    console.log('Index: Tasks loading:', tasksLoading);
-  }, [isAdmin, isTeacher, isStudent, subjects, subjectsLoading, tasks, tasksLoading]);
+  }, [isAdmin, isTeacher, isStudent, subjects, tasks]);
 
   if (!user) {
     return (
@@ -53,18 +48,6 @@ const Index = () => {
     console.log('Index: User is student:', isStudent);
     console.log('Index: User exists in students table:', !!currentUserAsStudent);
     return <StudentDashboard />;
-  }
-
-  // Show loading skeleton while main data loads for admin/teacher views
-  if ((isAdmin || isTeacher) && (studentsLoading || subjectsLoading || tasksLoading || attendanceLoading)) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
-        </div>
-        <FleetBoardSkeleton />
-      </div>
-    );
   }
 
   // Show fleet board for teachers and admins who are not students
@@ -92,14 +75,11 @@ const Index = () => {
   const transformedTasks = tasks.map(task => {
     console.log('Index: Raw task data:', task);
     
-    // The subject data comes from the join and might be nested differently
-    // Let's try multiple ways to access it
     let subjectName = '';
     
     if (task.subjects?.name) {
       subjectName = task.subjects.name;
     } else {
-      // If no subject name found in joined data, try to find it by subject_id
       const subject = subjects.find(s => s.id === task.subject_id);
       subjectName = subject?.name || '';
     }
