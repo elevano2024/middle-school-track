@@ -4,17 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ClipboardList } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
-import TaskCard from './TaskCard';
+import { useSubjects } from '@/hooks/useSubjects';
+import SubjectTaskWidget from './SubjectTaskWidget';
 import TaskCardSkeleton from './TaskCardSkeleton';
 import LoadingSpinner from './LoadingSpinner';
+import SummaryHeader from './SummaryHeader';
 
 const StudentDashboard = () => {
   const { tasks, loading, error, updateTaskStatus } = useTasks();
+  const { subjects, loading: subjectsLoading } = useSubjects();
 
-  if (loading) {
+  if (loading || subjectsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
             <p className="text-gray-600">Complete your assigned activities at your own pace</p>
@@ -45,7 +48,7 @@ const StudentDashboard = () => {
   if (tasks.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
             <p className="text-gray-600">Complete your assigned activities at your own pace</p>
@@ -62,7 +65,7 @@ const StudentDashboard = () => {
     );
   }
 
-  // Convert tasks to the format expected by TaskCard
+  // Convert tasks to the format expected by components
   const convertedTasks = tasks.map(task => ({
     id: task.id,
     title: task.title,
@@ -74,23 +77,50 @@ const StudentDashboard = () => {
     createdAt: task.created_at
   }));
 
+  // Group tasks by subject
+  const tasksBySubject = convertedTasks.reduce((acc, task) => {
+    const subjectName = task.subject;
+    if (!acc[subjectName]) {
+      acc[subjectName] = [];
+    }
+    acc[subjectName].push(task);
+    return acc;
+  }, {} as Record<string, typeof convertedTasks>);
+
+  // Get all subjects that have tasks assigned
+  const subjectsWithTasks = Object.keys(tasksBySubject).sort();
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
           <p className="text-gray-600">Complete your assigned activities at your own pace</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {convertedTasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onUpdateStatus={updateTaskStatus}
+        {/* Summary Header */}
+        <SummaryHeader tasks={convertedTasks} />
+
+        {/* Subject-based task organization */}
+        <div className="space-y-6">
+          {subjectsWithTasks.map(subjectName => (
+            <SubjectTaskWidget
+              key={subjectName}
+              subjectName={subjectName}
+              tasks={tasksBySubject[subjectName]}
+              onUpdateTaskStatus={updateTaskStatus}
             />
           ))}
         </div>
+
+        {subjectsWithTasks.length === 0 && (
+          <Alert>
+            <ClipboardList className="h-4 w-4" />
+            <AlertDescription>
+              No tasks found for any subjects. Check back later for new assignments!
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </div>
   );
