@@ -10,13 +10,12 @@ import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
 import FleetBoardSkeleton from '../components/FleetBoardSkeleton';
-import LoadingSpinner from '../components/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 
 const Index = () => {
   const { user } = useAuth();
-  const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
+  const { isAdmin, isTeacher, isStudent } = useUserRole();
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
@@ -43,12 +42,17 @@ const Index = () => {
     );
   }
 
-  if (roleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
+  // Check if the current user exists in the students table
+  const currentUserAsStudent = students.find(student => student.id === user.id);
+  
+  // Show student dashboard if:
+  // 1. User has student role, OR
+  // 2. User exists in the students table (even if they're admin/teacher)
+  if (isStudent || currentUserAsStudent) {
+    console.log('Index: Showing student dashboard for user:', user.id);
+    console.log('Index: User is student:', isStudent);
+    console.log('Index: User exists in students table:', !!currentUserAsStudent);
+    return <StudentDashboard />;
   }
 
   // Show loading skeleton while main data loads for admin/teacher views
@@ -61,19 +65,6 @@ const Index = () => {
         <FleetBoardSkeleton />
       </div>
     );
-  }
-
-  // Check if the current user exists in the students table
-  const currentUserAsStudent = students.find(student => student.id === user.id);
-  
-  // Show student dashboard if:
-  // 1. User has student role, OR
-  // 2. User exists in the students table (even if they're admin/teacher)
-  if (isStudent || currentUserAsStudent) {
-    console.log('Index: Showing student dashboard for user:', user.id);
-    console.log('Index: User is student:', isStudent);
-    console.log('Index: User exists in students table:', !!currentUserAsStudent);
-    return <StudentDashboard />;
   }
 
   // Show fleet board for teachers and admins who are not students

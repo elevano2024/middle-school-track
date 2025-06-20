@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ProtectedLayoutProps {
   children: React.ReactNode;
@@ -24,13 +25,11 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     }
   }, [user, loading, navigate, location]);
 
-  // Only show loading for auth state, not role determination
-  if (loading) {
+  // Show single loading state while auth or role is being determined
+  if (loading || (user && roleLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p>Loading...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
@@ -43,11 +42,11 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     await signOut();
   };
 
-  // Student layout without sidebar - show immediately, let Index page handle role loading
+  // Student layout - clean navbar only, no sidebar
   if (isStudent) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Top Navbar */}
+        {/* Top Navbar for Students */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -80,8 +79,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Admin/Teacher layout with sidebar - show immediately, let Index page handle role loading
-  if (isAdmin || isTeacher || !roleLoading) {
+  // Admin/Teacher layout with sidebar
+  if (isAdmin || isTeacher) {
     return (
       <>
         <AppSidebar />
@@ -97,11 +96,19 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Minimal fallback while role loads - no loading spinner
+  // Fallback for users without proper roles
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-6">
-        {children}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="text-center">
+        <p className="text-gray-600 mb-4">No role assigned. Please contact an administrator.</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );
