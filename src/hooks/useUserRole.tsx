@@ -9,29 +9,44 @@ export const useUserRole = () => {
   const { user } = useAuth();
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) {
+        console.log('No user found, setting role to null');
         setRole(null);
+        setError(null);
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        console.log('Fetching role for user:', user.id, user.email);
+        
+        const { data, error: fetchError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching user role:', error);
+        if (fetchError) {
+          if (fetchError.code === 'PGRST116') {
+            console.log('No role found for user:', user.email);
+            setRole(null);
+            setError('No role assigned');
+          } else {
+            console.error('Error fetching user role:', fetchError);
+            setError('Failed to fetch user role');
+          }
         } else if (data) {
+          console.log('Role found for user:', user.email, 'Role:', data.role);
           setRole(data.role as UserRole);
+          setError(null);
         }
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Unexpected error fetching user role:', error);
+        setError('An unexpected error occurred');
       } finally {
         setLoading(false);
       }
@@ -44,5 +59,7 @@ export const useUserRole = () => {
   const isTeacher = role === 'teacher';
   const isStudent = role === 'student';
 
-  return { role, loading, isAdmin, isTeacher, isStudent };
+  console.log('useUserRole state:', { role, loading, error, isAdmin, isTeacher, isStudent, userEmail: user?.email });
+
+  return { role, loading, error, isAdmin, isTeacher, isStudent };
 };
