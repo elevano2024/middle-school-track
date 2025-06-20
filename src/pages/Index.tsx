@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -8,6 +9,8 @@ import { useAttendance } from '@/hooks/useAttendance';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
+import FleetBoardSkeleton from '../components/FleetBoardSkeleton';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 
@@ -17,7 +20,7 @@ const Index = () => {
   const { students, loading: studentsLoading } = useStudents();
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { tasks, loading: tasksLoading, updateTaskStatus } = useTasks();
-  const { loading: attendanceLoading } = useAttendance(); // Initialize attendance hook
+  const { loading: attendanceLoading } = useAttendance();
 
   // Add debugging for subjects data
   React.useEffect(() => {
@@ -40,14 +43,18 @@ const Index = () => {
     );
   }
 
-  if (roleLoading || studentsLoading) {
+  if (roleLoading) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-6">
-            <p>Loading your permissions...</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading your permissions..." />
+      </div>
+    );
+  }
+
+  if (studentsLoading && (isAdmin || isTeacher)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading student data..." />
       </div>
     );
   }
@@ -78,14 +85,14 @@ const Index = () => {
     );
   }
 
+  // Show loading skeleton while main data is loading
   if (subjectsLoading || tasksLoading || attendanceLoading) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="p-6">
-            <p>Loading student data...</p>
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
+        </div>
+        <FleetBoardSkeleton />
       </div>
     );
   }

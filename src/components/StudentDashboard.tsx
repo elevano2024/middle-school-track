@@ -2,19 +2,29 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ClipboardList, Loader2 } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
 import TaskCard from './TaskCard';
+import TaskCardSkeleton from './TaskCardSkeleton';
+import LoadingSpinner from './LoadingSpinner';
 
 const StudentDashboard = () => {
   const { tasks, loading, error, updateTaskStatus } = useTasks();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p>Loading your activities...</p>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">My Learning Activities</h1>
+            <p className="text-gray-600">Complete your assigned activities at your own pace</p>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <TaskCardSkeleton key={index} />
+            ))}
+          </div>
         </div>
       </div>
     );
