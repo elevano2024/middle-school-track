@@ -24,7 +24,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     }
   }, [user, loading, navigate, location]);
 
-  if (loading || roleLoading) {
+  // Only show loading for overall auth state, not for role determination
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -42,8 +43,8 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     await signOut();
   };
 
-  // Student layout without sidebar
-  if (isStudent) {
+  // Student layout without sidebar - only show this if we know for sure the user is a student
+  if (isStudent && !roleLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Top Navbar */}
@@ -79,7 +80,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Admin/Teacher layout with sidebar
+  // Admin/Teacher layout with sidebar - render immediately for non-students
   return (
     <>
       <AppSidebar />
