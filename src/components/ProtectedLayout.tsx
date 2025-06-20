@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useLoading } from '@/contexts/LoadingContext';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ interface ProtectedLayoutProps {
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const { isStudent, isAdmin, isTeacher } = useUserRole();
+  const { isLoading } = useLoading();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,6 +25,11 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
       navigate('/auth');
     }
   }, [user, navigate, location]);
+
+  // Don't render anything if we're in the main loading state
+  if (isLoading) {
+    return null;
+  }
 
   if (!user) {
     return null;
@@ -84,7 +91,7 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
     );
   }
 
-  // Fallback for users without proper roles
+  // Fallback for users without proper roles - only show after loading is complete
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="text-center">

@@ -35,6 +35,7 @@ export function AppSidebar() {
     await signOut();
   };
 
+  // Only filter items if we have role data loaded
   const filteredItems = items.filter(item => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.teacherOnly && !isTeacher && !isAdmin) return false;
