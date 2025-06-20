@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Home, Users, LogOut, Plus, Settings } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Home, Users, LogOut, Settings } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
@@ -9,7 +9,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -27,23 +26,17 @@ const items = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const location = useLocation();
   const { signOut, user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
-  const currentPath = location.pathname;
 
   const isCollapsed = state === 'collapsed';
-  const canAccessUsers = isAdmin || isTeacher;
-
-  const getNavClassName = ({ isActive }: { isActive: boolean }) =>
-    isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/50';
 
   const handleSignOut = async () => {
     await signOut();
   };
 
   const filteredItems = items.filter(item => {
-    if (item.adminOnly && !canAccessUsers) return false;
+    if (item.adminOnly && !isAdmin) return false;
     if (item.teacherOnly && !isTeacher && !isAdmin) return false;
     return true;
   });
@@ -61,13 +54,18 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel></SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavClassName}>
+                    <NavLink 
+                      to={item.url} 
+                      end 
+                      className={({ isActive }) =>
+                        isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/50'
+                      }
+                    >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
