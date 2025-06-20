@@ -23,6 +23,7 @@ export const useUserRole = () => {
 
       try {
         console.log('Fetching role for user:', user.id, user.email);
+        setLoading(true);
         
         const { data, error: fetchError } = await supabase
           .from('user_roles')
