@@ -24,7 +24,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
-            <LoadingSpinner text="Checking permissions..." />
+            <LoadingSpinner text="Loading..." />
           </CardContent>
         </Card>
       </div>

@@ -46,15 +46,19 @@ const Index = () => {
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading your permissions..." />
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
 
-  if (studentsLoading && (isAdmin || isTeacher)) {
+  // Show loading skeleton while main data loads for admin/teacher views
+  if ((isAdmin || isTeacher) && (studentsLoading || subjectsLoading || tasksLoading || attendanceLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading student data..." />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
+        </div>
+        <FleetBoardSkeleton />
       </div>
     );
   }
@@ -81,18 +85,6 @@ const Index = () => {
             <p>You don't have permission to access the student tracker. Please contact an administrator to assign you the appropriate role.</p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  // Show loading skeleton while main data is loading
-  if (subjectsLoading || tasksLoading || attendanceLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
-        </div>
-        <FleetBoardSkeleton />
       </div>
     );
   }
