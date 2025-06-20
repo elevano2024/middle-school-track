@@ -1,11 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useStudents } from '@/hooks/useStudents';
-import { useSubjects } from '@/hooks/useSubjects';
-import { useTasks } from '@/hooks/useTasks';
-import { useAttendance } from '@/hooks/useAttendance';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface LoadingContextType {
@@ -24,31 +19,18 @@ export const useLoading = () => {
 
 export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { loading: authLoading } = useAuth();
-  const { loading: roleLoading } = useUserRole();
-  const { loading: studentsLoading } = useStudents();
-  const { loading: subjectsLoading } = useSubjects();
-  const { loading: tasksLoading } = useTasks();
-  const { loading: attendanceLoading } = useAttendance();
 
-  // Determine if any critical loading is happening
-  const isLoading = authLoading || 
-                   roleLoading || 
-                   studentsLoading || 
-                   subjectsLoading || 
-                   tasksLoading || 
-                   attendanceLoading;
-
-  // Show unified loading screen when any critical data is loading
-  if (isLoading) {
+  // Only show loading for auth - let individual components handle their own data loading
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading your dashboard..." />
+        <LoadingSpinner size="lg" text="Loading..." />
       </div>
     );
   }
 
   return (
-    <LoadingContext.Provider value={{ isLoading }}>
+    <LoadingContext.Provider value={{ isLoading: authLoading }}>
       {children}
     </LoadingContext.Provider>
   );

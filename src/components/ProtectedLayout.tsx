@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface ProtectedLayoutProps {
   children: React.ReactNode;
@@ -14,7 +15,7 @@ interface ProtectedLayoutProps {
 
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
-  const { isStudent, isAdmin, isTeacher } = useUserRole();
+  const { isStudent, isAdmin, isTeacher, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,6 +32,15 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const handleSignOut = async () => {
     await signOut();
   };
+
+  // Show loading only while checking roles
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading your dashboard..." />
+      </div>
+    );
+  }
 
   // Student layout - clean navbar only, no sidebar
   if (isStudent) {
