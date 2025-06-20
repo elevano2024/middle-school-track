@@ -27,6 +27,8 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // 2. User exists but still loading role data
   const isLoading = authLoading || (user && roleLoading);
 
+  console.log('LoadingContext: Auth loading:', authLoading, 'Role loading:', roleLoading, 'Final loading:', isLoading);
+
   // Show unified loading screen when any critical data is loading
   if (isLoading) {
     return (
