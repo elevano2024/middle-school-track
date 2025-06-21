@@ -80,14 +80,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   };
 
   return (
-    <div className={`border rounded-xl p-3 transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''}`}>
+    <div className={`w-64 min-w-64 max-w-64 border rounded-xl p-3 transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''}`}>
       <div className="flex items-start justify-between mb-2">
-        <h4 className="text-sm font-semibold line-clamp-2 flex-1">{task.title}</h4>
-        <div className="flex items-center ml-2">
+        <h4 className="text-sm font-semibold line-clamp-2 flex-1 pr-2">{task.title}</h4>
+        <div className="flex items-center flex-shrink-0">
           <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1 shadow-sm`}></div>
           <button
             onClick={handleIconClick}
-            className="p-1 hover:bg-white/60 rounded-full transition-colors duration-200"
+            className="p-1 hover:bg-white/60 rounded-full transition-colors duration-200 flex-shrink-0"
             disabled={isUpdating}
           >
             <CircleDot className="w-4 h-4 text-gray-600" />
@@ -112,7 +112,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-white/30">
-          <p className="text-xs text-gray-700 mb-3 bg-white/40 rounded-md p-2">{task.description}</p>
+          <p className="text-xs text-gray-700 mb-3 bg-white/40 rounded-md p-2 break-words">{task.description}</p>
           
           <div className="space-y-1">
             <div className="text-xs font-medium text-gray-600 mb-2">Change Status:</div>

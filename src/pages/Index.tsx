@@ -11,8 +11,10 @@ import StudentDashboard from '../components/StudentDashboard';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { FilterX, Users, UserCheck, RefreshCw } from 'lucide-react';
+import { FilterX, Users, UserCheck, RefreshCw, ChevronDown, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 
 type StatusFilter = TaskStatus | 'all';
@@ -32,6 +34,7 @@ const Index = () => {
   const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
 
   // Add debugging for subjects data
   React.useEffect(() => {
@@ -320,23 +323,80 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-900">Students:</span>
-            <Select value="all" onValueChange={(value) => {
-              if (value === 'all') {
-                setSelectedStudentIds([]);
-              }
-            }}>
-              <SelectTrigger className="w-40 border-blue-200 focus:border-blue-500 focus:ring-blue-500">
-                <SelectValue placeholder="All Students" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Students</SelectItem>
-                {students.map(student => (
-                  <SelectItem key={student.id} value={student.id}>
-                    {student.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={isStudentDropdownOpen} onOpenChange={setIsStudentDropdownOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-48 justify-between border-blue-200 focus:border-blue-500 focus:ring-blue-500 hover:bg-blue-50"
+                >
+                  {selectedStudentIds.length === 0 ? (
+                    "All Students"
+                  ) : selectedStudentIds.length === 1 ? (
+                    students.find(s => s.id === selectedStudentIds[0])?.name || "1 Student"
+                  ) : (
+                    `${selectedStudentIds.length} Students`
+                  )}
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0" align="start">
+                <div className="p-3 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900">Select Students</span>
+                    {selectedStudentIds.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700"
+                        onClick={() => setSelectedStudentIds([])}
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <div className="p-2 space-y-1">
+                    {students.map(student => (
+                      <div
+                        key={student.id}
+                        className="flex items-center space-x-2 p-2 hover:bg-blue-50 rounded-md cursor-pointer"
+                        onClick={() => handleStudentToggle(student.id)}
+                      >
+                        <Checkbox
+                          checked={selectedStudentIds.includes(student.id)}
+                          onCheckedChange={() => handleStudentToggle(student.id)}
+                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        />
+                        <span className="text-sm text-gray-900 flex-1">{student.name}</span>
+                        {selectedStudentIds.includes(student.id) && (
+                          <Check className="h-4 w-4 text-blue-600" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-3 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>{selectedStudentIds.length} of {students.length} selected</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => {
+                        if (selectedStudentIds.length === students.length) {
+                          setSelectedStudentIds([]);
+                        } else {
+                          setSelectedStudentIds(students.map(s => s.id));
+                        }
+                      }}
+                    >
+                      {selectedStudentIds.length === students.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="ml-auto text-sm text-blue-700">

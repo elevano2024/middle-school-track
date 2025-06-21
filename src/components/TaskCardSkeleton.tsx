@@ -1,28 +1,24 @@
-
 import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const TaskCardSkeleton: React.FC = () => {
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-6 w-16 rounded-full" />
+    <div className="w-64 min-w-64 max-w-64 border rounded-xl p-3 bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+      <div className="flex items-start justify-between mb-2">
+        <Skeleton className="h-4 w-32 flex-1 pr-2" />
+        <div className="flex items-center flex-shrink-0">
+          <Skeleton className="w-2 h-2 rounded-full mr-2 mt-1" />
+          <Skeleton className="w-6 h-6 rounded-full" />
         </div>
-        <Skeleton className="h-4 w-20" />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
-        <div className="flex gap-2 pt-2">
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <Skeleton className="h-6 w-20 mb-2 rounded-md" />
+      
+      <div className="flex items-center mb-2">
+        <Skeleton className="w-3 h-3 mr-1 rounded-full" />
+        <Skeleton className="h-4 w-8" />
+      </div>
+    </div>
   );
 };
 

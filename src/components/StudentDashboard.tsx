@@ -5,6 +5,7 @@ import { ClipboardList, FilterX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '@/hooks/useTasks';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TaskStatus } from '@/types/task';
 import TaskCard from './TaskCard';
 import SummaryHeader from './SummaryHeader';
@@ -146,37 +147,42 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        <Card className="w-full bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
+        <Card className="w-full bg-white/80 backdrop-blur-sm shadow-lg border-blue-100 overflow-hidden">
           <CardContent className="p-6">
             {subjectsWithTasks.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {subjectsWithTasks.map(subject => (
-                      <TableHead key={subject} className="text-center font-semibold text-blue-900 bg-gradient-to-r from-blue-50 to-indigo-50">
-                        {subject}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    {subjectsWithTasks.map(subject => (
-                      <TableCell key={subject} className="align-top p-4">
-                        <div className="space-y-3">
-                          {tasksBySubject[subject].map(task => (
-                            <TaskCard
-                              key={task.id}
-                              task={task}
-                              onUpdateStatus={handleUpdateTaskStatus}
-                            />
-                          ))}
-                        </div>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <ScrollArea className="w-full">
+                <div className="min-w-fit">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {subjectsWithTasks.map(subject => (
+                          <TableHead key={subject} className="text-center font-semibold text-blue-900 bg-gradient-to-r from-blue-50 to-indigo-50 min-w-[280px]">
+                            {subject}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        {subjectsWithTasks.map(subject => (
+                          <TableCell key={subject} className="align-top p-4 min-w-[280px]">
+                            <div className="space-y-3">
+                              {tasksBySubject[subject].map(task => (
+                                <TaskCard
+                                  key={task.id}
+                                  task={task}
+                                  onUpdateStatus={handleUpdateTaskStatus}
+                                />
+                              ))}
+                            </div>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             ) : statusFilter !== 'all' ? (
               <div className="text-center py-8">
                 <ClipboardList className="h-12 w-12 text-blue-400 mx-auto mb-4" />
