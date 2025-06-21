@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Users, LogOut, Settings, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, LogOut, Settings, UserCheck, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -20,6 +20,7 @@ const items = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Attendance', url: '/attendance', icon: UserCheck, teacherOnly: true },
   { title: 'Manage Tasks', url: '/settings', icon: Settings, teacherOnly: true },
+  { title: 'Analytics', url: '/analytics', icon: BarChart3, adminOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
 ];
 

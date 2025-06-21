@@ -14,6 +14,7 @@ import UserManagement from "./pages/UserManagement";
 import AddContent from "./pages/AddContent";
 import Settings from "./pages/Settings";
 import AttendanceManagement from "./pages/AttendanceManagement";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,11 @@ const AppWithRealtime = () => {
         <Route path="/attendance" element={
           <ProtectedPageWrapper>
             <AttendanceManagement />
+          </ProtectedPageWrapper>
+        } />
+        <Route path="/analytics" element={
+          <ProtectedPageWrapper>
+            <Analytics />
           </ProtectedPageWrapper>
         } />
         <Route path="/add-content" element={
