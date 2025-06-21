@@ -98,10 +98,10 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
   const isFormValid = selectedUserId && selectedRole && !userHasRole;
 
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCog className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <UserCog className="w-5 h-5 text-blue-600" />
           Assign Role to User
         </CardTitle>
       </CardHeader>
@@ -109,17 +109,17 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
         <form onSubmit={handleAssignRole} className="space-y-4">
           {/* User Search and Selection */}
           <div className="space-y-2">
-            <Label htmlFor="userSearch">Search and Select User *</Label>
+            <Label htmlFor="userSearch" className="text-blue-900">Search and Select User *</Label>
             <div className="space-y-2">
               {/* Search Input */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
                 <Input
                   id="userSearch"
                   placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   disabled={assigning}
                 />
               </div>
@@ -130,7 +130,7 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
                 onValueChange={setSelectedUserId}
                 disabled={assigning}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder={
                     filteredProfiles.length === 0 
                       ? searchTerm 
@@ -141,16 +141,16 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
                 </SelectTrigger>
                 <SelectContent>
                   {filteredProfiles.length === 0 ? (
-                    <div className="p-2 text-center text-gray-500 text-sm">
+                    <div className="p-2 text-center text-blue-600 text-sm">
                       {searchTerm ? 'No users match your search' : 'No users available'}
                     </div>
                   ) : (
-                    filteredProfiles.map((profile) => (
+                    filteredProfiles.map(profile => (
                       <SelectItem key={profile.id} value={profile.id}>
                         <div className="flex items-center justify-between w-full">
                           <div>
                             <div className="font-medium">{profile.full_name}</div>
-                            <div className="text-xs text-gray-500">{profile.email}</div>
+                            <div className="text-sm text-gray-500">{profile.email}</div>
                           </div>
                           <div className="flex gap-1 ml-2">
                             {profile.user_roles && profile.user_roles.length > 0 ? (
@@ -177,13 +177,12 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
               </Select>
             </div>
 
-            {/* Selected User Info */}
             {selectedUser && (
-              <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">{selectedUser.full_name}</p>
-                    <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                    <p className="font-medium text-blue-900">{selectedUser.full_name}</p>
+                    <p className="text-sm text-blue-600">{selectedUser.email}</p>
                   </div>
                   <div className="flex gap-1">
                     {selectedUser.user_roles && selectedUser.user_roles.length > 0 ? (
@@ -209,13 +208,13 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
 
           {/* Role Selection */}
           <div className="space-y-2">
-            <Label htmlFor="roleSelect">Select Role to Assign *</Label>
+            <Label htmlFor="roleSelect" className="text-blue-900">Select Role to Assign *</Label>
             <Select 
               value={selectedRole} 
               onValueChange={(value: 'admin' | 'teacher' | 'student') => setSelectedRole(value)}
               disabled={assigning}
             >
-              <SelectTrigger id="roleSelect">
+              <SelectTrigger id="roleSelect" className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                 <SelectValue placeholder="Choose a role" />
               </SelectTrigger>
               <SelectContent>
@@ -243,9 +242,9 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
 
           {/* Warning for existing role */}
           {userHasRole && selectedUser && selectedRole && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
+            <Alert className="bg-amber-50 border-amber-200">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
                 <strong>{selectedUser.full_name}</strong> already has the <strong>{selectedRole}</strong> role. 
                 Please select a different role or use the users table to remove existing roles first.
               </AlertDescription>
@@ -274,8 +273,8 @@ export const RoleAssignmentForm: React.FC<RoleAssignmentFormProps> = ({ profiles
           </div>
 
           {/* Help Text */}
-          <Alert>
-            <AlertDescription>
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertDescription className="text-blue-700">
               Assign roles to users to control their access levels. Users can have multiple roles, 
               and role assignments will automatically sync with the students table for student roles.
             </AlertDescription>

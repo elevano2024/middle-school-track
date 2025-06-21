@@ -7,6 +7,7 @@ import { PasswordResetForm } from '@/components/PasswordResetForm';
 import { UsersList } from '@/components/UsersList';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
+import { Users } from 'lucide-react';
 
 const UserManagement = () => {
   const { isAdmin } = useUserRole();
@@ -34,11 +35,14 @@ const UserManagement = () => {
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">User Management</h1>
-            <p className="text-gray-600">Manage user accounts, roles, and permissions</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent flex items-center gap-2">
+              <Users className="w-6 h-6 text-blue-600" />
+              User Management
+            </h1>
+            <p className="text-blue-600">Manage user accounts, roles, and permissions</p>
           </div>
           {isAdmin && (
-            <Button onClick={handleSyncStudents} variant="outline">
+            <Button onClick={handleSyncStudents} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
               Sync Student Records
             </Button>
           )}

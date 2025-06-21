@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,7 +59,7 @@ export const AddSubjectForm = ({ onSubjectCreated }: AddSubjectFormProps) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Subject Name</Label>
+        <Label htmlFor="name" className="text-blue-900">Subject Name</Label>
         <Input
           id="name"
           placeholder="e.g., Mathematics, Science, History, Practical Life, Sensorial"
@@ -68,6 +67,7 @@ export const AddSubjectForm = ({ onSubjectCreated }: AddSubjectFormProps) => {
             required: 'Subject name is required',
             minLength: { value: 2, message: 'Subject name must be at least 2 characters' }
           })}
+          className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
         />
         {errors.name && (
           <p className="text-sm text-red-600">{errors.name.message}</p>

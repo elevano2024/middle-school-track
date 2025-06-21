@@ -11,8 +11,9 @@ import StudentDashboard from '../components/StudentDashboard';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { FilterX, Users, UserCheck } from 'lucide-react';
+import { FilterX, Users, UserCheck, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 type StatusFilter = TaskStatus | 'all';
 type AttendanceFilter = 'all' | 'present' | 'absent';
@@ -20,15 +21,17 @@ type AttendanceFilter = 'all' | 'present' | 'absent';
 const Index = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent } = useUserRole();
-  const { students } = useStudents();
-  const { subjects } = useSubjects();
-  const { tasks, updateTaskStatus } = useTasks();
-  const { attendance: attendanceRecords } = useAttendance();
+  const { students, refetch: refetchStudents } = useStudents();
+  const { subjects, refetch: refetchSubjects } = useSubjects();
+  const { tasks, updateTask, refetch: refetchTasks, isRefetching } = useTasks();
+  const { attendance: attendanceRecords, refetch: refetchAttendance } = useAttendance();
+  const { toast } = useToast();
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   // Add debugging for subjects data
   React.useEffect(() => {
@@ -182,12 +185,12 @@ const Index = () => {
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
     console.log(`Index: Attempting to update task ${taskId} to status ${newStatus}`);
-    const success = await updateTaskStatus(taskId, newStatus);
-    if (success) {
-      console.log(`Index: Task ${taskId} status updated to ${newStatus}`);
-      return true;
-    } else {
-      console.error(`Index: Failed to update task ${taskId} status to ${newStatus}`);
+    try {
+      updateTask({ taskId, updates: { status: newStatus } });
+      console.log(`Index: Task ${taskId} status update initiated (optimistic)`);
+      return true; // Optimistic update always returns true immediately
+    } catch (error) {
+      console.error(`Index: Failed to update task ${taskId} status to ${newStatus}:`, error);
       return false;
     }
   };
@@ -237,10 +240,57 @@ const Index = () => {
   // Check if any filters are active
   const hasActiveFilters = statusFilter !== 'all' || attendanceFilter !== 'all' || selectedStudentIds.length > 0;
 
+  // Manual refresh function for TV display
+  const handleManualRefresh = async () => {
+    console.log('=== MANUAL REFRESH TRIGGERED ===');
+    setIsManualRefreshing(true);
+    
+    try {
+      // Refresh all data in parallel
+      await Promise.all([
+        refetchTasks(),
+        refetchStudents(),
+        refetchSubjects(),
+        refetchAttendance()
+      ]);
+      
+      console.log('=== MANUAL REFRESH COMPLETED ===');
+      toast({
+        title: "Data Refreshed",
+        description: "All data has been synchronized successfully!",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Manual refresh failed:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Student Progress Overview</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+          Student Progress Overview
+        </h1>
+        <Button
+          onClick={handleManualRefresh}
+          disabled={isManualRefreshing || isRefetching}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+        >
+          <RefreshCw 
+            className={`w-4 h-4 ${isManualRefreshing || isRefetching ? 'animate-spin' : ''}`} 
+          />
+          {isManualRefreshing || isRefetching ? 'Refreshing...' : 'Refresh Data'}
+        </Button>
       </div>
       
       <SummaryHeader 
@@ -250,13 +300,13 @@ const Index = () => {
       />
 
       {/* Additional Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 p-6">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Attendance:</span>
+            <UserCheck className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">Attendance:</span>
             <Select value={attendanceFilter} onValueChange={(value: AttendanceFilter) => setAttendanceFilter(value)}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32 border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -268,59 +318,36 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Students:</span>
-            <Select>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder={
-                  selectedStudentIds.length === 0 
-                    ? "All students" 
-                    : `${selectedStudentIds.length} selected`
-                } />
+            <Users className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">Students:</span>
+            <Select value="all" onValueChange={(value) => {
+              if (value === 'all') {
+                setSelectedStudentIds([]);
+              }
+            }}>
+              <SelectTrigger className="w-40 border-blue-200 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="All Students" />
               </SelectTrigger>
               <SelectContent>
-                <div className="p-2">
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {transformedStudents.map(student => (
-                      <div key={student.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`student-${student.id}`}
-                          checked={selectedStudentIds.includes(student.id)}
-                          onChange={() => handleStudentToggle(student.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <label 
-                          htmlFor={`student-${student.id}`}
-                          className="text-sm text-gray-700 cursor-pointer"
-                        >
-                          {student.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <SelectItem value="all">All Students</SelectItem>
+                {students.map(student => (
+                  <SelectItem key={student.id} value={student.id}>
+                    {student.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {hasActiveFilters && (
-            <Button
-              onClick={clearAllFilters}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <FilterX className="w-4 h-4" />
-              Clear All Filters
-            </Button>
-          )}
+          <div className="ml-auto text-sm text-blue-700">
+            Showing {filteredStudents.length} students across {filteredSubjects.length} subjects
+          </div>
         </div>
       </div>
 
       {/* Filter Status Bar */}
       {hasActiveFilters && (
-        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-blue-900">
               Active Filters:
@@ -332,7 +359,7 @@ const Index = () => {
                 </span>
               )}
               {attendanceFilter !== 'all' && (
-                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full">
                   {attendanceFilter === 'present' ? 'Present' : 'Absent'}
                 </span>
               )}

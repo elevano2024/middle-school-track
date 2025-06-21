@@ -16,7 +16,7 @@ const CheckInButton: React.FC = () => {
       <Button
         variant="outline"
         size="sm"
-        className="bg-gray-50 border-gray-200 text-gray-500"
+        className="bg-blue-50 border-blue-200 text-blue-600 shadow-sm"
         disabled
       >
         <Clock className="w-4 h-4 mr-2" />
@@ -31,7 +31,7 @@ const CheckInButton: React.FC = () => {
       <Button
         variant="outline"
         size="sm"
-        className="bg-gray-50 border-gray-200 text-gray-500"
+        className="bg-gray-50 border-gray-200 text-gray-500 shadow-sm"
         disabled
       >
         <Calendar className="w-4 h-4 mr-2" />
@@ -56,7 +56,7 @@ const CheckInButton: React.FC = () => {
       <Button
         variant="outline"
         size="sm"
-        className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+        className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 shadow-sm"
         disabled
       >
         <CheckCircle className="w-4 h-4 mr-2" />
@@ -72,7 +72,7 @@ const CheckInButton: React.FC = () => {
         disabled={isMarkingAttendance}
         variant="outline"
         size="sm"
-        className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+        className="bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 shadow-sm"
       >
         <XCircle className="w-4 h-4 mr-2" />
         {isMarkingAttendance ? "Updating..." : "Check In"}
@@ -86,7 +86,7 @@ const CheckInButton: React.FC = () => {
       disabled={isMarkingAttendance}
       variant="outline"
       size="sm"
-      className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+      className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-700 hover:from-blue-100 hover:to-indigo-100 shadow-sm"
     >
       <Clock className="w-4 h-4 mr-2" />
       {isMarkingAttendance ? "Checking In..." : "Check In"}

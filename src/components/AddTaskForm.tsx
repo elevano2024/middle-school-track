@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,12 +178,12 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
       {/* Assignment Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Students Selection */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
               <Users className="h-5 w-5 text-blue-600" />
               Select Students
-              <span className="text-sm font-normal text-gray-600">
+              <span className="text-sm font-normal text-blue-600">
                 ({selectedStudents.length} selected)
               </span>
             </CardTitle>
@@ -196,7 +195,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
                 variant="outline" 
                 size="sm"
                 onClick={handleSelectAll}
-                className="flex-1"
+                className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 Select All
               </Button>
@@ -205,15 +204,15 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
                 variant="outline" 
                 size="sm"
                 onClick={handleSelectNone}
-                className="flex-1"
+                className="flex-1 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 Clear All
               </Button>
             </div>
             
-            <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-3 bg-gray-50">
+            <div className="border rounded-lg p-4 max-h-64 overflow-y-auto space-y-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
               {students.map((student) => (
-                <div key={student.id} className="flex items-center space-x-3 p-2 hover:bg-white rounded-md transition-colors">
+                <div key={student.id} className="flex items-center space-x-3 p-2 hover:bg-white/60 rounded-md transition-colors">
                   <Checkbox
                     id={student.id}
                     checked={selectedStudents.includes(student.id)}
@@ -225,8 +224,8 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
                     htmlFor={student.id} 
                     className="cursor-pointer flex-1 text-sm"
                   >
-                    <div className="font-medium">{student.name}</div>
-                    <div className="text-xs text-gray-500">Grade {student.grade}</div>
+                    <div className="font-medium text-blue-900">{student.name}</div>
+                    <div className="text-xs text-blue-600">Grade {student.grade}</div>
                   </Label>
                 </div>
               ))}
@@ -239,9 +238,9 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
         </Card>
 
         {/* Subject Selection */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
               <BookOpen className="h-5 w-5 text-blue-600" />
               Subject Area
             </CardTitle>
@@ -249,7 +248,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           <CardContent>
             <div className="space-y-3">
               <Select onValueChange={(value) => setValue('subject_id', value)} value={selectedSubjectId}>
-                <SelectTrigger className="h-12 text-base">
+                <SelectTrigger className="h-12 text-base border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Choose a subject area" />
                 </SelectTrigger>
                 <SelectContent>

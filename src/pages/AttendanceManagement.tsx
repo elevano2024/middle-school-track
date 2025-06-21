@@ -195,21 +195,21 @@ const AttendanceManagement = () => {
     switch (row.status) {
       case 'present':
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+          <Badge variant="default" className="bg-emerald-100 text-emerald-800 border-emerald-200">
             <CheckCircle className="w-3 h-3 mr-1" />
             Present
           </Badge>
         );
       case 'absent':
         return (
-          <Badge variant="destructive">
+          <Badge variant="destructive" className="bg-rose-100 text-rose-800 border-rose-200">
             <XCircle className="w-3 h-3 mr-1" />
             Absent
           </Badge>
         );
       case 'not-marked':
         return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
             <Clock className="w-3 h-3 mr-1" />
             Not Marked
           </Badge>
@@ -233,11 +233,11 @@ const AttendanceManagement = () => {
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <UserCheck className="w-6 h-6" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent flex items-center gap-2">
+              <UserCheck className="w-6 h-6 text-blue-600" />
               Attendance Management
             </h1>
-            <p className="text-gray-600">View and manage student attendance records for {targetDateDisplay}</p>
+            <p className="text-blue-600">View and manage student attendance records for {targetDateDisplay}</p>
           </div>
           <Button onClick={handleMarkAllPresent} disabled={isMarkingAttendance}>
             Mark All Present Today
@@ -245,10 +245,10 @@ const AttendanceManagement = () => {
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
           <CardHeader>
-            <CardTitle>Filters</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-blue-900">Filters</CardTitle>
+            <CardDescription className="text-blue-600">
               Filter students by name, attendance status, and date. 
               {dateFilter ? ` Showing data for ${targetDateDisplay}.` : ' Showing today\'s data.'}
             </CardDescription>
@@ -257,23 +257,23 @@ const AttendanceManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search by student name */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Search Student</label>
+                <label className="text-sm font-medium text-blue-900">Search Student</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
                   <Input
                     placeholder="Search by student name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Status filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium text-blue-900">Status</label>
                 <Select value={statusFilter} onValueChange={(value: typeof statusFilter) => setStatusFilter(value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -287,10 +287,10 @@ const AttendanceManagement = () => {
 
               {/* Date filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date</label>
+                <label className="text-sm font-medium text-blue-900">Date</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Button variant="outline" className="w-full justify-start text-left font-normal border-blue-200 text-blue-700 hover:bg-blue-50">
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateFilter ? format(dateFilter, "PPP") : "Today"}
                     </Button>
@@ -306,7 +306,7 @@ const AttendanceManagement = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="w-full"
+                        className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
                         onClick={() => setDateFilter(undefined)}
                       >
                         Show Today
@@ -320,12 +320,12 @@ const AttendanceManagement = () => {
         </Card>
 
         {/* Attendance Table */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="text-blue-900">
               Student Attendance 
               {filteredRows.length > 0 && (
-                <span className="text-sm font-normal text-gray-500 ml-2">
+                <span className="text-sm font-normal text-blue-600 ml-2">
                   ({filteredRows.length} students)
                 </span>
               )}
@@ -334,11 +334,11 @@ const AttendanceManagement = () => {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                Loading student data...
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                <p className="text-blue-600">Loading student data...</p>
               </div>
             ) : filteredRows.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-blue-600">
                 {studentAttendanceRows.length === 0 ? (
                   "No students found in the system."
                 ) : (
@@ -349,28 +349,28 @@ const AttendanceManagement = () => {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Marked At</TableHead>
-                      <TableHead>Marked By</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <TableHead className="text-blue-900 font-semibold">Student</TableHead>
+                      <TableHead className="text-blue-900 font-semibold">Date</TableHead>
+                      <TableHead className="text-blue-900 font-semibold">Status</TableHead>
+                      <TableHead className="text-blue-900 font-semibold">Marked At</TableHead>
+                      <TableHead className="text-blue-900 font-semibold">Marked By</TableHead>
+                      <TableHead className="text-right text-blue-900 font-semibold">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="divide-y divide-blue-100">
                     {filteredRows.map((row) => (
-                      <TableRow key={row.studentId}>
-                        <TableCell className="font-medium">
+                      <TableRow key={row.studentId} className="hover:bg-blue-50/50 transition-colors">
+                        <TableCell className="font-medium text-blue-900">
                           {row.studentName}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-gray-700">
                           {targetDateDisplay}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(row)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-gray-700">
                           {row.attendanceRecord?.marked_at ? (
                             format(new Date(row.attendanceRecord.marked_at), 'MMM dd, h:mm a')
                           ) : (
@@ -392,7 +392,7 @@ const AttendanceManagement = () => {
                                   size="sm"
                                   onClick={() => handleMarkAttendance(row.studentId, true)}
                                   disabled={isMarkingAttendance}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                                 >
                                   <CheckCircle className="w-3 h-3 mr-1" />
                                   Present
@@ -402,7 +402,7 @@ const AttendanceManagement = () => {
                                   size="sm"
                                   onClick={() => handleMarkAttendance(row.studentId, false)}
                                   disabled={isMarkingAttendance}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
                                 >
                                   <XCircle className="w-3 h-3 mr-1" />
                                   Absent
@@ -416,6 +416,7 @@ const AttendanceManagement = () => {
                                   size="sm"
                                   onClick={() => handleToggleAttendance(row.studentId, row.attendanceRecord!.is_present)}
                                   disabled={isMarkingAttendance}
+                                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
                                 >
                                   <Edit className="w-3 h-3 mr-1" />
                                   Toggle
@@ -424,7 +425,7 @@ const AttendanceManagement = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDeleteAttendance(row.attendanceRecord!.id, row.studentName)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </Button>

@@ -236,10 +236,10 @@ export const UsersList: React.FC<UsersListProps> = ({
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-blue-900">
+            <Users className="w-5 h-5 text-blue-600" />
             Users
           </CardTitle>
         </CardHeader>
@@ -252,15 +252,15 @@ export const UsersList: React.FC<UsersListProps> = ({
 
   if (error) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-blue-900">
+            <Users className="w-5 h-5 text-blue-600" />
             Users
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3 text-red-600">
+          <div className="flex items-center gap-3 text-rose-600">
             <AlertTriangle className="h-5 w-5" />
             <p>{error}</p>
           </div>
@@ -270,13 +270,13 @@ export const UsersList: React.FC<UsersListProps> = ({
   }
 
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <Users className="w-5 h-5 text-blue-600" />
           Users ({filteredProfiles.length})
           {filteredProfiles.length !== profiles.length && (
-            <span className="text-sm font-normal text-gray-500">
+            <span className="text-sm font-normal text-blue-600">
               of {profiles.length} total
             </span>
           )}
@@ -287,18 +287,18 @@ export const UsersList: React.FC<UsersListProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
             <Input
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
           {/* Role Filter */}
           <Select value={roleFilter} onValueChange={(value: typeof roleFilter) => setRoleFilter(value)}>
-            <SelectTrigger>
+            <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -313,7 +313,7 @@ export const UsersList: React.FC<UsersListProps> = ({
 
         {/* Users Table */}
         {filteredProfiles.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-blue-600">
             {profiles.length === 0 ? (
               "No users found in the system."
             ) : (
@@ -324,24 +324,24 @@ export const UsersList: React.FC<UsersListProps> = ({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <TableHead className="text-blue-900 font-semibold">User</TableHead>
+                  <TableHead className="text-blue-900 font-semibold">Email</TableHead>
+                  <TableHead className="text-blue-900 font-semibold">Roles</TableHead>
+                  <TableHead className="text-blue-900 font-semibold">Joined</TableHead>
+                  <TableHead className="text-right text-blue-900 font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="divide-y divide-blue-100">
                 {filteredProfiles.map((profile) => (
-                  <TableRow key={profile.id}>
-                    <TableCell className="font-medium">
+                  <TableRow key={profile.id} className="hover:bg-blue-50/50 transition-colors">
+                    <TableCell className="font-medium text-blue-900">
                       {profile.full_name || 'No Name'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        {profile.email}
+                        <Mail className="w-4 h-4 text-blue-400" />
+                        <span className="text-gray-700">{profile.email}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -357,13 +357,13 @@ export const UsersList: React.FC<UsersListProps> = ({
                             </Badge>
                           ))
                         ) : (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-blue-200 text-blue-600">
                             No role assigned
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-gray-700">
                       {new Date(profile.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
@@ -373,6 +373,7 @@ export const UsersList: React.FC<UsersListProps> = ({
                             variant="ghost" 
                             size="sm"
                             disabled={processingUserId === profile.id}
+                            className="hover:bg-blue-50"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </Button>
@@ -413,7 +414,7 @@ export const UsersList: React.FC<UsersListProps> = ({
                                 <DropdownMenuItem 
                                   key={index}
                                   onClick={() => handleRemoveRole(profile.id, userRole.role)}
-                                  className="text-orange-600"
+                                  className="text-amber-600"
                                 >
                                   <UserMinus className="w-4 h-4 mr-2" />
                                   Remove {userRole.role}
@@ -437,7 +438,7 @@ export const UsersList: React.FC<UsersListProps> = ({
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteUser(profile.id, profile.full_name, profile.email)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete User

@@ -33,9 +33,14 @@ export const useTasks = () => {
       return await fetchTasksFromDatabase(user.id, isStudent, isAdmin, isTeacher);
     },
     enabled: !!user?.id && !roleLoading,
-    staleTime: 1000 * 60 * 5, // 5 minutes - longer cache since we have real-time updates
-    refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on mount since we have real-time updates
+    // Production-optimized settings for TV display
+    staleTime: 1000 * 30, // 30 seconds - aggressive for real-time feel
+    refetchInterval: 1000 * 60, // 1 minute fallback polling
+    refetchIntervalInBackground: true, // Keep polling even when not focused
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch on mount for fresh data
+    retry: 3, // Retry failed requests
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
   // Optimistic delete mutation
@@ -83,89 +88,115 @@ export const useTasks = () => {
       });
     },
     onSettled: () => {
-      // Always refetch after mutation settles
+      // Force immediate refetch for production reliability
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
     },
   });
 
-  // Optimistic update mutation
+  // Optimistic update mutation with enhanced error handling
   const updateTaskMutation = useMutation({
     mutationFn: async ({ taskId, updates }: { taskId: string, updates: Partial<Task> }) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', taskId);
+      console.log(`useTasks: Updating task ${taskId} with:`, updates);
       
-      if (error) throw error;
-      return { taskId, updates };
+      const { error, data } = await supabase
+        .from('tasks')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString() // Ensure updated_at is set
+        })
+        .eq('id', taskId)
+        .select();
+      
+      if (error) {
+        console.error('useTasks: Update error:', error);
+        throw error;
+      }
+      
+      console.log('useTasks: Update successful:', data);
+      return { taskId, updates, data };
     },
     onMutate: async ({ taskId, updates }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] });
       
       const previousTasks = queryClient.getQueryData<Task[]>(['tasks', user?.id, isAdmin, isTeacher, isStudent]);
       
-      // Optimistically update the cache
+      // Optimistically update the cache with timestamp
       queryClient.setQueryData<Task[]>(
         ['tasks', user?.id, isAdmin, isTeacher, isStudent],
         (oldTasks) => 
           oldTasks?.map(task => 
-            task.id === taskId ? { ...task, ...updates } : task
+            task.id === taskId ? { 
+              ...task, 
+              ...updates,
+              updated_at: new Date().toISOString()
+            } : task
           ) || []
       );
       
+      console.log(`useTasks: Optimistic update applied for task ${taskId}`);
       return { previousTasks };
     },
     onError: (error, variables, context) => {
+      // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', user?.id, isAdmin, isTeacher, isStudent], context.previousTasks);
       }
-      console.error('Error updating task:', error);
+      console.error('useTasks: Error updating task:', error);
       toast({
-        title: "Error",
-        description: "Failed to update task. Please try again.",
+        title: "Update Failed",
+        description: "Failed to update task. Changes have been reverted.",
         variant: "destructive",
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log(`useTasks: Task ${result.taskId} updated successfully`);
       toast({
         title: "Success",
         description: "Task updated successfully!",
       });
     },
     onSettled: () => {
+      // Force immediate refetch for production reliability
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      
+      // Also invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     },
   });
 
-  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
-    console.log(`useTasks: Updating task ${taskId} to status ${newStatus}`);
-    const success = await updateTaskStatusInDatabase(taskId, newStatus);
-    
-    if (success) {
-      // Invalidate and refetch tasks after successful update
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    }
-    
-    return success;
+  // Enhanced updateTask function for better production reliability
+  const updateTask = ({ taskId, updates }: { taskId: string, updates: Partial<Task> }) => {
+    console.log(`useTasks: Initiating update for task ${taskId}`);
+    updateTaskMutation.mutate({ taskId, updates });
   };
 
-  // Only log when data is actually loaded (not during loading states)
-  if (query.data && query.data.length > 0) {
-    console.log('=== TASKS LOADED ===');
-    console.log('Tasks count:', query.data.length);
-  }
+  // Legacy function for backward compatibility
+  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
+    console.log(`useTasks: Legacy updateTaskStatus called for task ${taskId} to status ${newStatus}`);
+    
+    try {
+      updateTask({ taskId, updates: { status: newStatus } });
+      return true; // Optimistic response
+    } catch (error) {
+      console.error('useTasks: Error in updateTaskStatus:', error);
+      return false;
+    }
+  };
 
   return {
     tasks: query.data || [],
-    loading: query.isLoading && !roleLoading,
+    loading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
+    isRefetching: query.isRefetching,
+    updateTask,
     updateTaskStatus,
-    // New reactive methods
     deleteTask: deleteTaskMutation.mutate,
-    updateTask: updateTaskMutation.mutate,
-    isDeleting: deleteTaskMutation.isPending,
     isUpdating: updateTaskMutation.isPending,
+    isDeleting: deleteTaskMutation.isPending,
   };
 };
 

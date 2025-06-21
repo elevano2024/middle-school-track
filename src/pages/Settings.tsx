@@ -7,7 +7,7 @@ import { AddSubjectForm } from '@/components/AddSubjectForm';
 import { AddTaskForm } from '@/components/AddTaskForm';
 import { SubjectsList } from '@/components/SubjectsList';
 import { TasksList } from '@/components/TasksList';
-import { BookOpen, ClipboardList, Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, BookOpen, ClipboardList } from 'lucide-react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
 
@@ -42,28 +42,28 @@ const Settings = () => {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">ARCC Task Management</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">ARCC Task Management</h1>
         </div>
-        <p className="text-gray-600">Manage subjects and learning activities for your students</p>
+        <p className="text-blue-600">Manage subjects and learning activities for your students</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="subjects" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <TabsTrigger value="subjects" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700">
             <BookOpen className="h-4 w-4" />
             Subjects
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="flex items-center gap-2">
+          <TabsTrigger value="tasks" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700">
             <ClipboardList className="h-4 w-4" />
             Learning Activities
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="subjects" className="mt-6 space-y-6">
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
             <CardHeader>
               <CardTitle className="text-xl text-blue-700">Add New Subject Area</CardTitle>
-              <CardDescription>
+              <CardDescription className="text-blue-600">
                 Create subject areas that align with Montessori principles (e.g., Practical Life, Sensorial, Mathematics, Language, Cultural Studies)
               </CardDescription>
             </CardHeader>
@@ -76,11 +76,11 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="tasks" className="mt-6 space-y-6">
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
             <CardHeader>
-              <CardTitle className="text-xl text-blue-700">Create Learning Activity</CardTitle>
-              <CardDescription>
-                Assign meaningful learning activities to students based on their individual development and interests
+              <CardTitle className="text-xl text-blue-700">Create New Learning Activity</CardTitle>
+              <CardDescription className="text-blue-600">
+                Design engaging activities that encourage student exploration and self-directed learning
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useSubjects } from '@/hooks/useSubjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,11 +81,11 @@ export const SubjectsList = () => {
 
   return (
     <>
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
+              <BookOpen className="h-5 w-5 text-blue-600" />
               Existing Subjects ({subjects.length})
             </CardTitle>
             <Button
@@ -94,7 +93,7 @@ export const SubjectsList = () => {
               size="sm"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 hover:bg-blue-50"
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="sr-only">Refresh subjects</span>
@@ -106,22 +105,21 @@ export const SubjectsList = () => {
             {subjects.map((subject) => (
               <div
                 key={subject.id}
-                className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: '#3B82F6' }}
+                      className="w-3 h-3 rounded-full flex-shrink-0 bg-blue-500 shadow-sm"
                     />
-                    <span className="font-medium text-gray-900 text-sm">{subject.name}</span>
+                    <span className="font-semibold text-blue-900 text-sm">{subject.name}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditingSubject(subject)}
-                      className="h-7 w-7 p-0"
+                      className="h-7 w-7 p-0 hover:bg-blue-100 text-blue-600"
                     >
                       <Edit className="h-3 w-3" />
                       <span className="sr-only">Edit subject</span>
@@ -130,14 +128,14 @@ export const SubjectsList = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setDeletingSubject(subject)}
-                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                     >
                       <Trash2 className="h-3 w-3" />
                       <span className="sr-only">Delete subject</span>
                     </Button>
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 border-blue-200">
                   {new Date(subject.created_at).toLocaleDateString()}
                 </Badge>
               </div>

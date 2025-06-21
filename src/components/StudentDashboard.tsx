@@ -12,14 +12,14 @@ import SummaryHeader from './SummaryHeader';
 type StatusFilter = TaskStatus | 'all';
 
 const StudentDashboard = () => {
-  const { tasks, error, updateTaskStatus } = useTasks();
+  const { tasks, error, updateTask } = useTasks();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Alert className="max-w-md mx-4">
-          <AlertDescription>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Alert className="max-w-md mx-4 border-rose-200 bg-rose-50">
+          <AlertDescription className="text-rose-700">
             {error instanceof Error ? error.message : 'Failed to load your activities. Please try again.'}
           </AlertDescription>
         </Alert>
@@ -29,16 +29,16 @@ const StudentDashboard = () => {
 
   if (tasks.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50" style={{ width: '100%' }}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" style={{ width: '100%' }}>
         <div className="w-full px-6 py-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
-            <p className="text-gray-600">Track your progress and update your task status</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">My Learning Dashboard</h1>
+            <p className="text-blue-600">Track your progress and update your task status</p>
           </div>
           
-          <Alert>
-            <ClipboardList className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="bg-blue-50 border-blue-200">
+            <ClipboardList className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700">
               No activities assigned yet. Check back later for new learning opportunities!
             </AlertDescription>
           </Alert>
@@ -98,12 +98,23 @@ const StudentDashboard = () => {
     }
   };
 
+  // Create optimistic update function that matches TaskCard interface
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: TaskStatus): Promise<boolean> => {
+    try {
+      updateTask({ taskId, updates: { status: newStatus } });
+      return true; // Optimistic update always returns true immediately
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      return false;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50" style={{ width: '100%' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" style={{ width: '100%' }}>
       <div className="w-full px-6 py-6 space-y-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Learning Dashboard</h1>
-          <p className="text-gray-600">Track your progress and update your task status</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">My Learning Dashboard</h1>
+          <p className="text-blue-600">Track your progress and update your task status</p>
         </div>
 
         <SummaryHeader 
@@ -114,7 +125,7 @@ const StudentDashboard = () => {
 
         {/* Filter Status Bar */}
         {statusFilter !== 'all' && (
-          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-blue-900">
                 Showing: <span className="font-bold">{getFilterDisplayText()}</span> tasks
@@ -135,14 +146,14 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        <Card className="w-full">
+        <Card className="w-full bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
           <CardContent className="p-6">
             {subjectsWithTasks.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     {subjectsWithTasks.map(subject => (
-                      <TableHead key={subject} className="text-center font-semibold">
+                      <TableHead key={subject} className="text-center font-semibold text-blue-900 bg-gradient-to-r from-blue-50 to-indigo-50">
                         {subject}
                       </TableHead>
                     ))}
@@ -157,7 +168,7 @@ const StudentDashboard = () => {
                             <TaskCard
                               key={task.id}
                               task={task}
-                              onUpdateStatus={updateTaskStatus}
+                              onUpdateStatus={handleUpdateTaskStatus}
                             />
                           ))}
                         </div>
@@ -168,22 +179,22 @@ const StudentDashboard = () => {
               </Table>
             ) : statusFilter !== 'all' ? (
               <div className="text-center py-8">
-                <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <ClipboardList className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-blue-900 mb-2">
                   No {getFilterDisplayText().toLowerCase()} tasks found
                 </h3>
-                <p className="text-gray-500 mb-4">
+                <p className="text-blue-600 mb-4">
                   You don't have any tasks with "{getFilterDisplayText().toLowerCase()}" status right now.
                 </p>
-                <Button onClick={clearFilter} variant="outline">
+                <Button onClick={clearFilter} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
                   <FilterX className="w-4 h-4 mr-2" />
                   Show All Tasks
                 </Button>
               </div>
             ) : (
-              <Alert>
-                <ClipboardList className="h-4 w-4" />
-                <AlertDescription>
+              <Alert className="bg-blue-50 border-blue-200">
+                <ClipboardList className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-700">
                   No tasks found for any subjects. Check back later for new assignments!
                 </AlertDescription>
               </Alert>

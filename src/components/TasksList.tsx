@@ -184,13 +184,13 @@ export const TasksList = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      working: { label: 'Working', className: 'bg-blue-100 text-blue-800' },
-      'need-help': { label: 'Need Help', className: 'bg-red-100 text-red-800' },
-      'ready-review': { label: 'Ready Review', className: 'bg-yellow-100 text-yellow-800' },
-      completed: { label: 'Completed', className: 'bg-green-100 text-green-800' }
+      working: { label: 'Working', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      'need-help': { label: 'Need Help', className: 'bg-rose-100 text-rose-800 border-rose-200' },
+      'ready-review': { label: 'Ready Review', className: 'bg-amber-100 text-amber-800 border-amber-200' },
+      completed: { label: 'Completed', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, className: 'bg-gray-100 text-gray-800 border-gray-200' };
     
     return (
       <Badge variant="secondary" className={`text-xs ${config.className}`}>
@@ -217,62 +217,94 @@ export const TasksList = () => {
 
   return (
     <>
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl text-blue-700 flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              Learning Activities ({filteredTasks.length}{tasks.length !== filteredTasks.length ? ` of ${tasks.length}` : ''})
+              <ClipboardList className="h-5 w-5 text-blue-600" />
+              Learning Activities ({filteredTasks.length})
             </CardTitle>
+            
             <div className="flex items-center gap-2">
               {hasActiveFilters && (
                 <Button
                   onClick={clearFilters}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                 >
                   <FilterX className="w-4 h-4" />
-                  Clear Filters
+                  Clear
                 </Button>
               )}
+              
               <Button
                 onClick={() => setShowFilters(!showFilters)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 <Filter className="w-4 h-4" />
-                Filters
+                {showFilters ? 'Hide' : 'Show'} Filters
               </Button>
             </div>
           </div>
+          
+          {/* Filter Summary */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {filters.search && (
+                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Search: "{filters.search}"
+                </div>
+              )}
+              {filters.subject !== 'all' && (
+                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Subject: {getSubjectName(filters.subject)}
+                </div>
+              )}
+              {filters.status !== 'all' && (
+                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Status: {filters.status}
+                </div>
+              )}
+              {filters.student !== 'all' && (
+                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Student: {getStudentName(filters.student)}
+                </div>
+              )}
+              {filters.groupBy !== 'none' && (
+                <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Grouped by: {filters.groupBy}
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
 
-        {/* Filters Section */}
         {showFilters && (
-          <CardContent className="border-t bg-gray-50">
+          <CardContent className="border-t bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4">
               {/* Search */}
               <div className="space-y-2">
-                <Label htmlFor="search">Search Tasks</Label>
+                <Label htmlFor="search" className="text-blue-900">Search Tasks</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
                   <Input
                     id="search"
                     placeholder="Search by task, student, or subject..."
                     value={filters.search}
                     onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                    className="pl-10"
+                    className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Subject Filter */}
               <div className="space-y-2">
-                <Label>Subject</Label>
+                <Label className="text-blue-900">Subject</Label>
                 <Select value={filters.subject} onValueChange={(value) => setFilters(prev => ({ ...prev, subject: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -288,9 +320,9 @@ export const TasksList = () => {
 
               {/* Status Filter */}
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label className="text-blue-900">Status</Label>
                 <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -305,14 +337,13 @@ export const TasksList = () => {
 
               {/* Student Filter */}
               <div className="space-y-2">
-                <Label>Student</Label>
+                <Label className="text-blue-900">Student</Label>
                 <Select value={filters.student} onValueChange={(value) => setFilters(prev => ({ ...prev, student: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Students</SelectItem>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {students.map((student) => (
                       <SelectItem key={student.id} value={student.id}>
                         {student.name}
@@ -324,12 +355,17 @@ export const TasksList = () => {
 
               {/* Date From */}
               <div className="space-y-2">
-                <Label>Created From</Label>
+                <Label className="text-blue-900">Date From</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal border-blue-200 text-blue-700 hover:bg-blue-50 ${
+                        !filters.dateFrom && "text-blue-500"
+                      }`}
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {filters.dateFrom ? format(filters.dateFrom, "MMM dd, yyyy") : "Select date"}
+                      {filters.dateFrom ? format(filters.dateFrom, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -345,12 +381,17 @@ export const TasksList = () => {
 
               {/* Date To */}
               <div className="space-y-2">
-                <Label>Created To</Label>
+                <Label className="text-blue-900">Date To</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal border-blue-200 text-blue-700 hover:bg-blue-50 ${
+                        !filters.dateTo && "text-blue-500"
+                      }`}
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {filters.dateTo ? format(filters.dateTo, "MMM dd, yyyy") : "Select date"}
+                      {filters.dateTo ? format(filters.dateTo, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -366,9 +407,9 @@ export const TasksList = () => {
 
               {/* Group By */}
               <div className="space-y-2">
-                <Label>Group By</Label>
+                <Label className="text-blue-900">Group By</Label>
                 <Select value={filters.groupBy} onValueChange={(value: TaskFilters['groupBy']) => setFilters(prev => ({ ...prev, groupBy: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,7 +427,7 @@ export const TasksList = () => {
                 <Button
                   onClick={clearFilters}
                   variant="outline"
-                  className="w-full flex items-center gap-2"
+                  className="w-full flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                   disabled={!hasActiveFilters}
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -399,54 +440,51 @@ export const TasksList = () => {
 
         <CardContent>
           {filteredTasks.length === 0 ? (
-            <Alert>
-              <ClipboardList className="h-4 w-4" />
-              <AlertDescription>
-                {tasks.length === 0 
-                  ? "No learning activities found. Create your first activity using the form above."
-                  : "No activities match the current filters. Try adjusting your search criteria."
-                }
-              </AlertDescription>
-            </Alert>
+            <div className="text-center py-8 text-blue-600">
+              {hasActiveFilters 
+                ? "No tasks match your current filters." 
+                : "No learning activities created yet. Use the form above to create your first activity."
+              }
+            </div>
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
                 <div key={groupName}>
+                  {/* Group Header */}
                   {filters.groupBy !== 'none' && (
-                    <div className="flex items-center gap-2 mb-4 pb-2 border-b">
-                      <BookOpen className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold text-gray-900">{groupName}</h3>
-                      <Badge variant="outline" className="ml-2">
-                        {groupTasks.length} task{groupTasks.length !== 1 ? 's' : ''}
-                      </Badge>
+                    <div className="mb-4">
+                      <h4 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                        {groupName} ({groupTasks.length})
+                      </h4>
                     </div>
                   )}
                   
-                  <div className="rounded-md border">
+                  <div className="rounded-lg border border-blue-200 overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[25%] min-w-[150px]">Activity Name</TableHead>
-                          <TableHead className="w-[20%] min-w-[120px]">Student</TableHead>
-                          <TableHead className="w-[15%] min-w-[100px]">Subject</TableHead>
-                          <TableHead className="w-[12%] min-w-[90px]">Status</TableHead>
-                          <TableHead className="w-[10%] min-w-[80px]">Created</TableHead>
-                          <TableHead className="w-[18%] min-w-[120px] text-right">Actions</TableHead>
+                        <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                          <TableHead className="w-[25%] min-w-[150px] text-blue-900 font-semibold">Activity Name</TableHead>
+                          <TableHead className="w-[20%] min-w-[120px] text-blue-900 font-semibold">Student</TableHead>
+                          <TableHead className="w-[15%] min-w-[100px] text-blue-900 font-semibold">Subject</TableHead>
+                          <TableHead className="w-[12%] min-w-[90px] text-blue-900 font-semibold">Status</TableHead>
+                          <TableHead className="w-[10%] min-w-[80px] text-blue-900 font-semibold">Created</TableHead>
+                          <TableHead className="w-[18%] min-w-[120px] text-right text-blue-900 font-semibold">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
-                      <TableBody>
+                      <TableBody className="divide-y divide-blue-100">
                         {groupTasks.map((task) => (
                           <TableRow 
                             key={task.id} 
-                            className={isDeleting ? 'opacity-50 transition-opacity' : ''}
+                            className={`hover:bg-blue-50/50 transition-colors ${isDeleting ? 'opacity-50 transition-opacity' : ''}`}
                           >
                             <TableCell className="font-medium w-[25%]">
                               <div className="max-w-[150px]">
-                                <div className="font-medium text-sm truncate" title={task.title}>
+                                <div className="font-medium text-sm truncate text-blue-900" title={task.title}>
                                   {task.title}
                                 </div>
                                 {task.description && (
-                                  <div className="text-xs text-gray-500 truncate" title={task.description}>
+                                  <div className="text-xs text-blue-600 truncate" title={task.description}>
                                     {task.description}
                                   </div>
                                 )}
@@ -454,7 +492,7 @@ export const TasksList = () => {
                             </TableCell>
                             <TableCell className="w-[20%]">
                               <div className="text-sm max-w-[120px]">
-                                <div className="truncate" title={getStudentName(task.student_id)}>
+                                <div className="truncate text-gray-900" title={getStudentName(task.student_id)}>
                                   {getStudentName(task.student_id)}
                                 </div>
                                 {task.students?.email && (
@@ -486,8 +524,9 @@ export const TasksList = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setEditingTask(task)}
-                                  className="h-7 w-7 p-0"
+                                  className="h-7 w-7 p-0 text-gray-600 hover:text-gray-800 hover:bg-blue-50"
                                   disabled={isDeleting}
+                                  title="Edit task"
                                 >
                                   <Edit className="h-3 w-3" />
                                   <span className="sr-only">Edit task</span>
@@ -498,6 +537,7 @@ export const TasksList = () => {
                                   onClick={() => setAssigningTask(task)}
                                   className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                   disabled={isDeleting}
+                                  title="Assign to student"
                                 >
                                   <UserPlus className="h-3 w-3" />
                                   <span className="sr-only">Assign to student</span>
@@ -506,7 +546,7 @@ export const TasksList = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setBulkAssigningTask(task)}
-                                  className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                                   title="Assign to multiple students"
                                   disabled={isDeleting}
                                 >
@@ -517,8 +557,9 @@ export const TasksList = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setDeletingTask(task)}
-                                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="h-7 w-7 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                                   disabled={isDeleting}
+                                  title="Delete task"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                   <span className="sr-only">Delete task</span>

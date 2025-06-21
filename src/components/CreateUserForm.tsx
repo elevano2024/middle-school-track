@@ -137,10 +137,10 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
                      newUserPassword.length >= 8;
 
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <UserPlus className="w-5 h-5 text-blue-600" />
           Create New User
         </CardTitle>
       </CardHeader>
@@ -148,14 +148,14 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
         <form onSubmit={handleCreateUser} className="space-y-4">
           {/* Full Name */}
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name *</Label>
+            <Label htmlFor="fullName" className="text-blue-900">Full Name *</Label>
             <Input
               id="fullName"
               type="text"
               placeholder="Enter full name"
               value={newUserFullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
-              className={errors.fullName ? 'border-red-500' : ''}
+              className={errors.fullName ? 'border-red-500' : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'}
               disabled={creatingUser}
             />
             {errors.fullName && (
@@ -168,14 +168,14 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
 
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address *</Label>
+            <Label htmlFor="email" className="text-blue-900">Email Address *</Label>
             <Input
               id="email"
               type="email"
               placeholder="Enter email address"
               value={newUserEmail}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className={errors.email ? 'border-red-500' : ''}
+              className={errors.email ? 'border-red-500' : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500'}
               disabled={creatingUser}
             />
             {errors.email && (
@@ -188,7 +188,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
 
           {/* Password */}
           <div className="space-y-2">
-            <Label htmlFor="password">Password *</Label>
+            <Label htmlFor="password" className="text-blue-900">Password *</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -196,7 +196,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
                 placeholder="Enter password (min 8 characters)"
                 value={newUserPassword}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+                className={errors.password ? 'border-red-500 pr-10' : 'border-blue-200 focus:border-blue-500 focus:ring-blue-500 pr-10'}
                 disabled={creatingUser}
               />
               <Button
@@ -224,9 +224,9 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
 
             {/* Password Strength Indicator */}
             {newUserPassword && (
-              <div className="space-y-2">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Password strength:</span>
+                  <span className="text-sm font-medium text-blue-900">Password strength:</span>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((level) => (
                       <div
@@ -243,7 +243,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
                       />
                     ))}
                   </div>
-                  <span className="text-sm">
+                  <span className="text-sm text-blue-700 font-medium">
                     {passwordValidation.strength <= 2
                       ? 'Weak'
                       : passwordValidation.strength <= 3
@@ -254,7 +254,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {Object.entries(passwordValidation.requirements).map(([key, met]) => (
-                    <div key={key} className={`flex items-center gap-1 ${met ? 'text-green-600' : 'text-gray-400'}`}>
+                    <div key={key} className={`flex items-center gap-1 ${met ? 'text-emerald-600' : 'text-gray-500'}`}>
                       {met ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                       <span>
                         {key === 'length' && '8+ characters'}
@@ -292,8 +292,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onCreateUser }) 
           </div>
 
           {/* Help Text */}
-          <Alert>
-            <AlertDescription>
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertDescription className="text-blue-700">
               Create a new user account with email and password. The user will be able to log in immediately 
               and can be assigned roles using the table above or the role assignment form.
             </AlertDescription>
