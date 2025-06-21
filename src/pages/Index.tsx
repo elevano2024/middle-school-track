@@ -121,7 +121,12 @@ const Index = () => {
       subject: subjectName,
       status: task.status,
       timeInStatus: task.time_in_status || 0,
-      createdAt: task.created_at
+      createdAt: task.created_at,
+      teacher_feedback_type: task.teacher_feedback_type,
+      teacher_feedback_message: task.teacher_feedback_message,
+      teacher_next_steps: task.teacher_next_steps,
+      feedback_given_at: task.feedback_given_at,
+      feedback_given_by: task.feedback_given_by
     };
   });
 

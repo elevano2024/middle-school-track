@@ -1,4 +1,3 @@
-
 export type TaskStatus = 'working' | 'need-help' | 'ready-review' | 'completed';
 
 export interface Student {
@@ -17,6 +16,12 @@ export interface Task {
   timeInStatus: number; // minutes in current status
   dueDate?: string;
   createdAt?: string;
+  // Teacher feedback fields
+  teacher_feedback_type?: 'thumbs_up' | 'thumbs_down' | 'neutral' | null;
+  teacher_feedback_message?: string | null;
+  teacher_next_steps?: string | null;
+  feedback_given_at?: string | null;
+  feedback_given_by?: string | null;
 }
 
 export interface TaskStatusCounts {
@@ -25,3 +30,5 @@ export interface TaskStatusCounts {
   readyReview: number;
   completed: number;
 }
+
+export type TeacherFeedbackType = 'thumbs_up' | 'thumbs_down' | 'neutral';

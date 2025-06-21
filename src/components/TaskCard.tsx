@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, Clock, Edit, Trash2, UserPlus, Users } from 'lucide-react';
+import { MoreVertical, Clock, Edit, Trash2, UserPlus, Users, MessageSquare } from 'lucide-react';
 import { Task as WorkflowTask, TaskStatus } from '../types/workflow';
 import { Task as ApiTask } from '@/types/task';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -7,6 +7,8 @@ import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
 import { BulkAssignTaskDialog } from '@/components/BulkAssignTaskDialog';
+import { TeacherFeedbackDialog } from '@/components/TeacherFeedbackDialog';
+import { StudentFeedbackDisplay } from '@/components/StudentFeedbackDisplay';
 
 interface TaskCardProps {
   task: WorkflowTask;
@@ -23,8 +25,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [deletingTask, setDeletingTask] = useState<ApiTask | null>(null);
   const [assigningTask, setAssigningTask] = useState<ApiTask | null>(null);
   const [bulkAssigningTask, setBulkAssigningTask] = useState<ApiTask | null>(null);
+  const [feedbackTask, setFeedbackTask] = useState<ApiTask | null>(null);
   
-  const { isAdmin, isTeacher } = useUserRole();
+  const { isAdmin, isTeacher, isStudent } = useUserRole();
   
   // Only teachers and admins can manage tasks
   const canManageTasks = isAdmin || isTeacher;
@@ -41,6 +44,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
       time_in_status: workflowTask.timeInStatus || null,
       created_at: workflowTask.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      // Include feedback fields
+      teacher_feedback_type: workflowTask.teacher_feedback_type,
+      teacher_feedback_message: workflowTask.teacher_feedback_message,
+      teacher_next_steps: workflowTask.teacher_next_steps,
+      feedback_given_at: workflowTask.feedback_given_at,
+      feedback_given_by: workflowTask.feedback_given_by,
       subjects: {
         name: workflowTask.subject
       }
@@ -139,6 +148,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     setIsExpanded(false);
   };
 
+  const handleGiveFeedback = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFeedbackTask(convertTaskForDialog(task));
+    setIsExpanded(false);
+  };
+
   return (
     <div className={`w-64 min-w-64 max-w-64 border rounded-xl p-3 transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''}`}>
       <div className="flex items-start justify-between mb-2">
@@ -181,6 +196,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
           <div className="bg-white/50 rounded-lg p-3 border border-white/30 shadow-sm">
             <p className="text-xs text-gray-700 leading-relaxed">{task.description}</p>
           </div>
+
+          {/* Student Feedback Display - Only for students or if task is completed */}
+          {(isStudent || task.status === 'completed') && task.teacher_feedback_type && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-purple-500 rounded-full"></div>
+                <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Teacher Feedback</div>
+              </div>
+              <StudentFeedbackDisplay task={convertTaskForDialog(task)} compact={true} />
+            </div>
+          )}
           
           {/* Status Change Section */}
           <div className="space-y-3">
@@ -217,6 +243,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
                 <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Task Management</div>
               </div>
               <div className="space-y-2">
+                {/* Feedback Button - Prominent for completed tasks */}
+                {task.status === 'completed' && (
+                  <button
+                    onClick={handleGiveFeedback}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-purple-100/60 hover:border-purple-200/80 group"
+                  >
+                    <MessageSquare className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                    <span>{task.teacher_feedback_type ? 'Update Feedback' : 'Give Feedback'}</span>
+                  </button>
+                )}
+                
                 <button
                   onClick={handleEdit}
                   className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-blue-700 bg-blue-50/70 hover:bg-blue-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-blue-100/60 hover:border-blue-200/80 group"
@@ -285,6 +322,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
           task={bulkAssigningTask}
           open={!!bulkAssigningTask}
           onOpenChange={(open) => !open && setBulkAssigningTask(null)}
+        />
+      )}
+
+      {feedbackTask && (
+        <TeacherFeedbackDialog
+          task={feedbackTask}
+          open={!!feedbackTask}
+          onOpenChange={(open) => !open && setFeedbackTask(null)}
         />
       )}
     </div>
