@@ -8,6 +8,7 @@ import { useAttendance } from '@/hooks/useAttendance';
 import FleetBoard from '../components/FleetBoard';
 import SummaryHeader from '../components/SummaryHeader';
 import StudentDashboard from '../components/StudentDashboard';
+import HelpTooltip from '../components/HelpTooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
@@ -279,21 +280,43 @@ const Index = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-          Student Progress Overview
-        </h1>
-        <Button
-          onClick={handleManualRefresh}
-          disabled={isManualRefreshing || isRefetching}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-50"
-        >
-          <RefreshCw 
-            className={`w-4 h-4 ${isManualRefreshing || isRefetching ? 'animate-spin' : ''}`} 
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+            Student Progress Overview
+          </h1>
+          <HelpTooltip
+            title="Dashboard Overview"
+            content={[
+              "This dashboard shows all students and their real-time task progress.",
+              "Students appear as cards organized by subject columns.",
+              "Task colors indicate status: Blue (Working), Red (Need Help), Orange (Ready Review), Green (Completed).",
+              "Click progress tiles above to filter by status, or use additional filters below."
+            ]}
           />
-          {isManualRefreshing || isRefetching ? 'Refreshing...' : 'Refresh Data'}
-        </Button>
+        </div>
+        <div className="flex items-center gap-3">
+          <HelpTooltip
+            title="Refresh Data"
+            content={[
+              "Click to manually refresh all data from the server.",
+              "Useful for TV displays or when real-time updates seem delayed.",
+              "Data automatically updates in real-time, but manual refresh ensures latest information."
+            ]}
+            size="sm"
+          />
+          <Button
+            onClick={handleManualRefresh}
+            disabled={isManualRefreshing || isRefetching}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+          >
+            <RefreshCw 
+              className={`w-4 h-4 ${isManualRefreshing || isRefetching ? 'animate-spin' : ''}`} 
+            />
+            {isManualRefreshing || isRefetching ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
+        </div>
       </div>
       
       <SummaryHeader 
@@ -304,6 +327,19 @@ const Index = () => {
 
       {/* Additional Filters */}
       <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-sm font-semibold text-blue-900">Additional Filters</h3>
+          <HelpTooltip
+            title="Advanced Filtering"
+            content={[
+              "Use these filters to narrow down your view of students.",
+              "Attendance filter shows only present or absent students for today.",
+              "Student selector lets you focus on specific students.",
+              "All filters work together - combine them for precise classroom views."
+            ]}
+            size="sm"
+          />
+        </div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-blue-600" />

@@ -6,6 +6,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useUserRole } from '@/hooks/useUserRole';
 import StudentDetailsModal from '@/components/StudentDetailsModal';
+import HelpTooltip from '@/components/HelpTooltip';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -187,6 +188,7 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <BarChart3 className="h-8 w-8 text-blue-600" />
         <div>
@@ -195,6 +197,15 @@ const Analytics = () => {
           </h1>
           <p className="text-gray-600">Comprehensive insights into student progress and school performance</p>
         </div>
+        <HelpTooltip
+          title="Analytics & Reports"
+          content={[
+            "View comprehensive analytics for all students and school-wide performance.",
+            "Click any student row in the performance table to view detailed individual reports.",
+            "Export student reports as PDF or share them via email with parents.",
+            "Monitor attendance trends, task completion rates, and identify students needing support."
+          ]}
+        />
       </div>
 
       {/* Key Metrics Cards */}

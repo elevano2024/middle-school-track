@@ -15,6 +15,7 @@ import AddContent from "./pages/AddContent";
 import Settings from "./pages/Settings";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import Analytics from "./pages/Analytics";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,11 @@ const AppWithRealtime = () => {
         <Route path="/settings" element={
           <ProtectedPageWrapper>
             <Settings />
+          </ProtectedPageWrapper>
+        } />
+        <Route path="/help" element={
+          <ProtectedPageWrapper>
+            <Help />
           </ProtectedPageWrapper>
         } />
         <Route path="*" element={<NotFound />} />

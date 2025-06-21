@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { CircleDot, Clock } from 'lucide-react';
-import { Task, TaskStatus } from '../types/workflow';
+import { MoreVertical, Clock, Edit, Trash2, UserPlus, Users } from 'lucide-react';
+import { Task as WorkflowTask, TaskStatus } from '../types/workflow';
+import { Task as ApiTask } from '@/types/task';
+import { useUserRole } from '@/hooks/useUserRole';
+import { EditTaskDialog } from '@/components/EditTaskDialog';
+import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
+import { AssignTaskDialog } from '@/components/AssignTaskDialog';
+import { BulkAssignTaskDialog } from '@/components/BulkAssignTaskDialog';
 
 interface TaskCardProps {
-  task: Task;
+  task: WorkflowTask;
   onUpdateStatus: (taskId: string, newStatus: TaskStatus) => Promise<boolean>;
 }
 
@@ -11,6 +17,35 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  
+  // Dialog states for task management
+  const [editingTask, setEditingTask] = useState<ApiTask | null>(null);
+  const [deletingTask, setDeletingTask] = useState<ApiTask | null>(null);
+  const [assigningTask, setAssigningTask] = useState<ApiTask | null>(null);
+  const [bulkAssigningTask, setBulkAssigningTask] = useState<ApiTask | null>(null);
+  
+  const { isAdmin, isTeacher } = useUserRole();
+  
+  // Only teachers and admins can manage tasks
+  const canManageTasks = isAdmin || isTeacher;
+
+  // Convert WorkflowTask to ApiTask format for dialogs
+  const convertTaskForDialog = (workflowTask: WorkflowTask): ApiTask => {
+    return {
+      id: workflowTask.id,
+      title: workflowTask.title,
+      description: workflowTask.description || null,
+      student_id: workflowTask.studentId,
+      subject_id: '', // We don't have this in WorkflowTask, dialogs will need to handle this
+      status: workflowTask.status,
+      time_in_status: workflowTask.timeInStatus || null,
+      created_at: workflowTask.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      subjects: {
+        name: workflowTask.subject
+      }
+    };
+  };
 
   const getStatusConfig = (status: TaskStatus) => {
     switch (status) {
@@ -79,6 +114,31 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     }
   };
 
+  // Task management action handlers
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingTask(convertTaskForDialog(task));
+    setIsExpanded(false);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingTask(convertTaskForDialog(task));
+    setIsExpanded(false);
+  };
+
+  const handleAssign = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAssigningTask(convertTaskForDialog(task));
+    setIsExpanded(false);
+  };
+
+  const handleBulkAssign = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBulkAssigningTask(convertTaskForDialog(task));
+    setIsExpanded(false);
+  };
+
   return (
     <div className={`w-64 min-w-64 max-w-64 border rounded-xl p-3 transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''}`}>
       <div className="flex items-start justify-between mb-2">
@@ -87,10 +147,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
           <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1 shadow-sm`}></div>
           <button
             onClick={handleIconClick}
-            className="p-1 hover:bg-white/60 rounded-full transition-colors duration-200 flex-shrink-0"
+            className={`p-1.5 rounded-full transition-all duration-200 flex-shrink-0 border ${
+              isExpanded 
+                ? 'bg-white/90 shadow-sm border-white/70 text-gray-800' 
+                : 'hover:bg-white/80 hover:shadow-sm border-transparent hover:border-white/50 text-gray-600 hover:text-gray-800'
+            }`}
             disabled={isUpdating}
+            title={canManageTasks ? "Task options" : "Change status"}
           >
-            <CircleDot className="w-4 h-4 text-gray-600" />
+            <MoreVertical className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
           </button>
         </div>
       </div>
@@ -111,30 +176,116 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
       )}
 
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-white/30">
-          <p className="text-xs text-gray-700 mb-3 bg-white/40 rounded-md p-2 break-words">{task.description}</p>
-          
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-gray-600 mb-2">Change Status:</div>
-            {getStatusOptions().map(status => (
-              <button
-                key={status}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStatusChange(status);
-                }}
-                disabled={isUpdating || status === task.status}
-                className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-all duration-200 ${
-                  status === task.status 
-                    ? 'bg-white/80 font-medium shadow-sm' 
-                    : 'hover:bg-white/60'
-                } ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {getStatusConfig(status).label}
-              </button>
-            ))}
+        <div className="mt-4 pt-4 border-t border-white/40 space-y-4">
+          {/* Task Description */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/30 shadow-sm">
+            <p className="text-xs text-gray-700 leading-relaxed">{task.description}</p>
           </div>
+          
+          {/* Status Change Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Change Status</div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {getStatusOptions().map(status => (
+                <button
+                  key={status}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStatusChange(status);
+                  }}
+                  disabled={isUpdating || status === task.status}
+                  className={`text-center px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    status === task.status 
+                      ? 'bg-white/90 shadow-md border-2 border-white/80 text-gray-800 ring-2 ring-white/40' 
+                      : 'bg-white/60 hover:bg-white/80 border border-white/50 hover:border-white/70 text-gray-700 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]'
+                  } ${isUpdating ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  {getStatusConfig(status).label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Task Management Section - Only for Teachers/Admins */}
+          {canManageTasks && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-emerald-500 rounded-full"></div>
+                <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Task Management</div>
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={handleEdit}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-blue-700 bg-blue-50/70 hover:bg-blue-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-blue-100/60 hover:border-blue-200/80 group"
+                >
+                  <Edit className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Edit Task Details</span>
+                </button>
+                <button
+                  onClick={handleAssign}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-emerald-100/60 hover:border-emerald-200/80 group"
+                >
+                  <UserPlus className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Reassign Student</span>
+                </button>
+                <button
+                  onClick={handleBulkAssign}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-purple-100/60 hover:border-purple-200/80 group"
+                >
+                  <Users className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  <span>Assign to Multiple</span>
+                </button>
+                
+                {/* Destructive Action Separator */}
+                <div className="pt-2 mt-3 border-t border-white/40">
+                  <button
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-rose-700 bg-rose-50/70 hover:bg-rose-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-rose-100/60 hover:border-rose-200/80 group hover:ring-2 hover:ring-rose-200/50"
+                  >
+                    <Trash2 className="w-4 h-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                    <span>Delete Task</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Task Management Dialogs */}
+      {editingTask && (
+        <EditTaskDialog
+          task={editingTask}
+          open={!!editingTask}
+          onOpenChange={(open) => !open && setEditingTask(null)}
+        />
+      )}
+
+      {deletingTask && (
+        <DeleteTaskDialog
+          task={deletingTask}
+          open={!!deletingTask}
+          onOpenChange={(open) => !open && setDeletingTask(null)}
+        />
+      )}
+
+      {assigningTask && (
+        <AssignTaskDialog
+          task={assigningTask}
+          open={!!assigningTask}
+          onOpenChange={(open) => !open && setAssigningTask(null)}
+        />
+      )}
+
+      {bulkAssigningTask && (
+        <BulkAssignTaskDialog
+          task={bulkAssigningTask}
+          open={!!bulkAssigningTask}
+          onOpenChange={(open) => !open && setBulkAssigningTask(null)}
+        />
       )}
     </div>
   );
