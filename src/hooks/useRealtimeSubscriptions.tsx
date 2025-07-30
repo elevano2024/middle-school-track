@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 import { useToast } from '@/hooks/use-toast';
 
 // Global subscription state - better management
@@ -59,23 +60,31 @@ class SubscriptionManager {
             queryClient.invalidateQueries({ 
               queryKey: ['tasks'],
               exact: false,
-              refetchType: 'active' // Only refetch active queries
+              refetchType: 'all' // Refetch all queries for TV display reliability
             });
             
             // Also invalidate any related queries
             queryClient.invalidateQueries({ 
               queryKey: ['students'],
               exact: false,
-              refetchType: 'active'
+              refetchType: 'all'
             });
             
-            // Force immediate refetch for tasks
+            // Force immediate refetch for tasks - multiple strategies for reliability
             queryClient.refetchQueries({ 
               queryKey: ['tasks'],
               exact: false
             });
             
-            // Show toast notification for status changes
+            // Extra aggressive refetch for presentation mode
+            setTimeout(() => {
+              queryClient.refetchQueries({ 
+                queryKey: ['tasks'],
+                exact: false
+              });
+            }, 500);
+            
+            // Show toast notification for status changes (only if toast is provided)
             if (payload.eventType === 'UPDATE' && payload.new && payload.old && toast) {
               const taskTitle = payload.new.title || 'Task';
               const oldStatus = payload.old.status;
@@ -290,6 +299,7 @@ export const useRealtimeSubscriptions = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isPresentationMode } = usePresentationMode();
   const subscriptionManager = SubscriptionManager.getInstance();
   const hasInitialized = useRef(false);
   const isInitializing = useRef(false);
@@ -319,10 +329,15 @@ export const useRealtimeSubscriptions = () => {
     const initializeSubscriptions = async () => {
       isInitializing.current = true;
       try {
-        const success = await subscriptionManager.subscribe(user.id, queryClient, toast);
+        // Don't show toast notifications in presentation mode
+        const toastForSubscription = isPresentationMode ? undefined : toast;
+        const success = await subscriptionManager.subscribe(user.id, queryClient, toastForSubscription);
         if (success) {
           hasInitialized.current = true;
           console.log('🎯 Real-time subscriptions ready for production TV display');
+          if (isPresentationMode) {
+            console.log('📺 Presentation mode: Toast notifications disabled for clean TV display');
+          }
         }
       } catch (error) {
         console.error('Failed to initialize subscriptions:', error);
@@ -340,7 +355,7 @@ export const useRealtimeSubscriptions = () => {
         hasInitialized.current = false;
       }
     };
-  }, [queryClient, user?.id, toast]);
+  }, [queryClient, user?.id, toast, isPresentationMode]);
 
   return null;
 };

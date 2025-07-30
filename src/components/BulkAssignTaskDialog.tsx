@@ -98,7 +98,14 @@ export const BulkAssignTaskDialog = ({ task, open, onOpenChange }: BulkAssignTas
   };
 
   const onSubmit = async (data: BulkAssignFormData) => {
-    if (!task || !data.student_ids || data.student_ids.length === 0) return;
+    if (!task || !data.student_ids || data.student_ids.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one student.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     

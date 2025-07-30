@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import { PresentationProvider } from "@/contexts/PresentationContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useRealtimeSubscriptions } from "@/hooks/useRealtimeSubscriptions";
 import ProtectedLayout from "@/components/ProtectedLayout";
@@ -88,7 +89,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <AppWithRealtime />
+        <PresentationProvider>
+          <AppWithRealtime />
+        </PresentationProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

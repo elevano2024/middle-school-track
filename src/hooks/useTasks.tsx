@@ -2,6 +2,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { fetchTasksFromDatabase, updateTaskStatusInDatabase } from '@/utils/taskApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 import { Task, TaskStatus } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export const useTasks = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent, loading: roleLoading } = useUserRole();
+  const { isPresentationMode } = usePresentationMode();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -29,13 +31,14 @@ export const useTasks = () => {
       console.log('=== FETCHING TASKS ===');
       console.log('User ID:', user.id);
       console.log('User roles:', { isAdmin, isTeacher, isStudent });
+      console.log('Presentation mode:', isPresentationMode);
       
       return await fetchTasksFromDatabase(user.id, isStudent, isAdmin, isTeacher);
     },
     enabled: !!user?.id && !roleLoading,
-    // Production-optimized settings for TV display
-    staleTime: 1000 * 30, // 30 seconds - aggressive for real-time feel
-    refetchInterval: 1000 * 60, // 1 minute fallback polling
+    // More aggressive settings for presentation mode
+    staleTime: isPresentationMode ? 1000 * 5 : 1000 * 30, // 5 seconds in presentation mode, 30 seconds normally
+    refetchInterval: isPresentationMode ? 1000 * 3 : 1000 * 60, // 3 seconds in presentation mode, 1 minute normally
     refetchIntervalInBackground: true, // Keep polling even when not focused
     refetchOnWindowFocus: true, // Refetch when window gains focus
     refetchOnMount: true, // Always refetch on mount for fresh data

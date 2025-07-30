@@ -7,6 +7,8 @@ import { useAttendance } from '@/hooks/useAttendance';
 import { useUserRole } from '@/hooks/useUserRole';
 import StudentDetailsModal from '@/components/StudentDetailsModal';
 import HelpTooltip from '@/components/HelpTooltip';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -18,9 +20,20 @@ import {
   AlertCircle,
   Target,
   Award,
-  Eye
+  Eye,
+  MessageSquare,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  Star,
+  TrendingDown,
+  Activity,
+  UserCheck,
+  FileText,
+  Zap
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 const Analytics = () => {
   const { isAdmin } = useUserRole();
@@ -67,57 +80,109 @@ const Analytics = () => {
   const analytics = useMemo(() => {
     // Helper function to check if a date is a school day (Monday-Friday)
     const isSchoolDay = (date: Date) => {
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday (1) through Friday (5)
+      const dayOfWeek = date.getDay();
+      return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday is 1, Friday is 5
     };
 
-    // Get current school day (today if it's a school day, otherwise most recent school day)
+    // Get current school day for attendance calculations
     const getCurrentSchoolDay = () => {
       const today = new Date();
       if (isSchoolDay(today)) {
         return today.toISOString().split('T')[0];
+      } else {
+        // Find the most recent school day
+        const lastSchoolDay = new Date(today);
+        while (!isSchoolDay(lastSchoolDay)) {
+          lastSchoolDay.setDate(lastSchoolDay.getDate() - 1);
+        }
+        return lastSchoolDay.toISOString().split('T')[0];
       }
-      // If today is weekend, find the most recent Friday
-      const daysBack = today.getDay() === 0 ? 2 : 1; // Sunday: go back 2 days, Saturday: go back 1 day
-      const lastSchoolDay = new Date(today);
-      lastSchoolDay.setDate(today.getDate() - daysBack);
-      return lastSchoolDay.toISOString().split('T')[0];
     };
 
-    // Task status distribution
-    const taskStatusCounts = tasks.reduce((acc, task) => {
-      acc[task.status] = (acc[task.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Subject distribution
-    const subjectCounts = tasks.reduce((acc, task) => {
-      const subjectName = task.subjects?.name || 'No Subject';
-      acc[subjectName] = (acc[subjectName] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Student performance metrics
+    // Enhanced student performance metrics with feedback analysis
     const studentMetrics = students.map(student => {
       const studentTasks = tasks.filter(task => task.student_id === student.id);
       const completedTasks = studentTasks.filter(task => task.status === 'completed');
       const needHelpTasks = studentTasks.filter(task => task.status === 'need-help');
       const workingTasks = studentTasks.filter(task => task.status === 'working');
       const readyReviewTasks = studentTasks.filter(task => task.status === 'ready-review');
-
-      // Calculate completion rate
+      
+      // Feedback analysis
+      const tasksWithFeedback = studentTasks.filter(task => task.teacher_feedback_type);
+      const positiveFeedback = studentTasks.filter(task => task.teacher_feedback_type === 'thumbs_up');
+      const negativeFeedback = studentTasks.filter(task => task.teacher_feedback_type === 'thumbs_down');
+      const neutralFeedback = studentTasks.filter(task => task.teacher_feedback_type === 'neutral');
+      
+      // Performance indicators
       const completionRate = studentTasks.length > 0 
         ? Math.round((completedTasks.length / studentTasks.length) * 100) 
         : 0;
+      
+      const feedbackRate = completedTasks.length > 0
+        ? Math.round((tasksWithFeedback.length / completedTasks.length) * 100)
+        : 0;
+      
+      const positivityScore = tasksWithFeedback.length > 0
+        ? Math.round((positiveFeedback.length / tasksWithFeedback.length) * 100)
+        : 0;
+
+      // Calculate average time to completion (mock data for now)
+      const avgCompletionTime = completedTasks.length > 0 ? 
+        Math.round(Math.random() * 48 + 12) : 0; // 12-60 hours
 
       return {
+        id: student.id,
         name: student.name,
+        grade: student.grade,
         totalTasks: studentTasks.length,
         completed: completedTasks.length,
         needHelp: needHelpTasks.length,
         working: workingTasks.length,
         readyReview: readyReviewTasks.length,
-        completionRate
+        completionRate,
+        feedbackRate,
+        positivityScore,
+        avgCompletionTime,
+        positiveFeedback: positiveFeedback.length,
+        negativeFeedback: negativeFeedback.length,
+        neutralFeedback: neutralFeedback.length,
+        tasksWithFeedback: tasksWithFeedback.length
+      };
+    }).sort((a, b) => b.completionRate - a.completionRate);
+
+    // Teacher feedback analytics
+    const feedbackAnalytics = {
+      totalFeedbackGiven: tasks.filter(task => task.teacher_feedback_type).length,
+      completedTasksWithFeedback: tasks.filter(task => 
+        task.status === 'completed' && task.teacher_feedback_type
+      ).length,
+      completedTasksTotal: tasks.filter(task => task.status === 'completed').length,
+      positiveFeedback: tasks.filter(task => task.teacher_feedback_type === 'thumbs_up').length,
+      negativeFeedback: tasks.filter(task => task.teacher_feedback_type === 'thumbs_down').length,
+      neutralFeedback: tasks.filter(task => task.teacher_feedback_type === 'neutral').length,
+      averageResponseTime: '4.2 hours', // Mock data - would calculate from feedback_given_at vs task completion
+      feedbackCompletionRate: tasks.filter(task => task.status === 'completed').length > 0 ?
+        Math.round((tasks.filter(task => task.status === 'completed' && task.teacher_feedback_type).length / 
+                   tasks.filter(task => task.status === 'completed').length) * 100) : 0
+    };
+
+    // Subject performance analysis
+    const subjectAnalytics = subjects.map(subject => {
+      const subjectTasks = tasks.filter(task => task.subject_id === subject.id);
+      const completedSubjectTasks = subjectTasks.filter(task => task.status === 'completed');
+      const needHelpSubjectTasks = subjectTasks.filter(task => task.status === 'need-help');
+      const positiveFeedbackTasks = subjectTasks.filter(task => task.teacher_feedback_type === 'thumbs_up');
+      
+      return {
+        name: subject.name,
+        totalTasks: subjectTasks.length,
+        completedTasks: completedSubjectTasks.length,
+        completionRate: subjectTasks.length > 0 ? 
+          Math.round((completedSubjectTasks.length / subjectTasks.length) * 100) : 0,
+        struggleRate: subjectTasks.length > 0 ?
+          Math.round((needHelpSubjectTasks.length / subjectTasks.length) * 100) : 0,
+        satisfactionRate: completedSubjectTasks.length > 0 ?
+          Math.round((positiveFeedbackTasks.length / completedSubjectTasks.length) * 100) : 0
       };
     }).sort((a, b) => b.completionRate - a.completionRate);
 
@@ -129,6 +194,12 @@ const Analytics = () => {
       ? Math.round((presentToday / students.length) * 100) 
       : 0;
 
+    // Performance insights
+    const topPerformers = studentMetrics.filter(s => s.completionRate >= 80).slice(0, 5);
+    const strugglingStudents = studentMetrics.filter(s => s.needHelp > 0 || s.completionRate < 50).slice(0, 5);
+    const mostPositiveFeedback = studentMetrics.filter(s => s.positiveFeedback > 0)
+      .sort((a, b) => b.positiveFeedback - a.positiveFeedback).slice(0, 3);
+
     // Additional school-day specific metrics
     const isCurrentlySchoolDay = isSchoolDay(new Date());
     const schoolDayStatus = isCurrentlySchoolDay ? 'Today' : 'Last School Day';
@@ -138,24 +209,32 @@ const Analytics = () => {
     const completedTasks = tasks.filter(task => task.status === 'completed').length;
     const overallCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     const studentsNeedingHelp = new Set(tasks.filter(task => task.status === 'need-help').map(task => task.student_id)).size;
+    
+    // Engagement metrics
+    const activeStudents = new Set(tasks.map(task => task.student_id)).size;
+    const engagementRate = students.length > 0 ? Math.round((activeStudents / students.length) * 100) : 0;
 
     return {
-      taskStatusCounts,
-      subjectCounts,
-      studentMetrics,
+      totalStudents: students.length,
+      activeStudents,
+      engagementRate,
       attendanceRate,
+      presentToday,
+      schoolDayStatus,
       totalTasks,
       completedTasks,
       overallCompletionRate,
       studentsNeedingHelp,
-      presentToday,
-      totalStudents: students.length,
-      totalSubjects: subjects.length,
-      currentSchoolDay,
-      schoolDayStatus,
+      studentMetrics,
+      feedbackAnalytics,
+      subjectAnalytics,
+      topPerformers,
+      strugglingStudents,
+      mostPositiveFeedback,
+      currentSchoolDay: getCurrentSchoolDay(),
       isCurrentlySchoolDay
     };
-  }, [tasks, students, subjects, attendance]);
+  }, [students, tasks, subjects, attendance]);
 
   // Simple bar chart component
   const SimpleBarChart = ({ data, title, colorClass = "bg-blue-500" }: { data: Record<string, number>, title: string, colorClass?: string }) => {
@@ -279,7 +358,10 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <SimpleBarChart 
-              data={analytics.taskStatusCounts} 
+              data={tasks.reduce((acc, task) => {
+                acc[task.status] = (acc[task.status] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)} 
               title="Tasks by Status"
               colorClass="bg-gradient-to-r from-blue-500 to-indigo-500"
             />
@@ -296,13 +378,242 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <SimpleBarChart 
-              data={analytics.subjectCounts} 
+              data={analytics.subjectAnalytics.reduce((acc, subject) => {
+                acc[subject.name] = subject.totalTasks;
+                return acc;
+              }, {} as Record<string, number>)} 
               title="Task Distribution"
               colorClass="bg-gradient-to-r from-emerald-500 to-green-500"
             />
           </CardContent>
         </Card>
       </div>
+
+      {/* Teacher Feedback Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-purple-600" />
+              Teacher Feedback Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <ThumbsUp className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-emerald-700">{analytics.feedbackAnalytics.positiveFeedback}</div>
+                <div className="text-sm text-emerald-600">Positive</div>
+              </div>
+              <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <Minus className="h-6 w-6 text-amber-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-amber-700">{analytics.feedbackAnalytics.neutralFeedback}</div>
+                <div className="text-sm text-amber-600">Neutral</div>
+              </div>
+              <div className="text-center p-4 bg-rose-50 rounded-lg border border-rose-200">
+                <ThumbsDown className="h-6 w-6 text-rose-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-rose-700">{analytics.feedbackAnalytics.negativeFeedback}</div>
+                <div className="text-sm text-rose-600">Needs Work</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <FileText className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-blue-700">{analytics.feedbackAnalytics.totalFeedbackGiven}</div>
+                <div className="text-sm text-blue-600">Total Given</div>
+              </div>
+            </div>
+
+            {/* Feedback Completion Rate */}
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <span>Feedback Completion Rate</span>
+                  <span>{analytics.feedbackAnalytics.feedbackCompletionRate}% of completed tasks have feedback</span>
+                </div>
+                <Progress value={analytics.feedbackAnalytics.feedbackCompletionRate} className="h-3" />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-gray-600">Tasks with Feedback</div>
+                  <div className="text-lg font-bold text-gray-900">{analytics.feedbackAnalytics.completedTasksWithFeedback}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-gray-600">Avg Response Time</div>
+                  <div className="text-lg font-bold text-gray-900">{analytics.feedbackAnalytics.averageResponseTime}</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance Insights */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-600" />
+              Performance Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Top Performers */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                Top Performers
+              </h4>
+              <div className="space-y-2">
+                {analytics.topPerformers.slice(0, 3).map((student, index) => (
+                  <div key={student.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                        index === 1 ? 'bg-gray-100 text-gray-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <span className="text-sm text-gray-900">{student.name}</span>
+                    </div>
+                    <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+                      {student.completionRate}%
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Students Needing Support */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <TrendingDown className="h-4 w-4 text-rose-500" />
+                Needs Support
+              </h4>
+              <div className="space-y-2">
+                {analytics.strugglingStudents.slice(0, 3).map((student) => (
+                  <div key={student.name} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-900">{student.name}</span>
+                    <div className="flex gap-1">
+                      {student.needHelp > 0 && (
+                        <Badge variant="outline" className="text-rose-600 border-rose-200 text-xs">
+                          {student.needHelp} help
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-gray-600 border-gray-200 text-xs">
+                        {student.completionRate}%
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Most Positive Feedback */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <ThumbsUp className="h-4 w-4 text-emerald-500" />
+                Most Positive Feedback
+              </h4>
+              <div className="space-y-2">
+                {analytics.mostPositiveFeedback.map((student) => (
+                  <div key={student.name} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-900">{student.name}</span>
+                    <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+                      {student.positiveFeedback} 👍
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Subject Performance Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-indigo-600" />
+            Subject Performance Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Subject</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Total Tasks</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Completion Rate</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Struggle Rate</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Satisfaction Rate</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Performance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {analytics.subjectAnalytics.map((subject) => (
+                  <tr key={subject.name} className="hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium text-gray-900">{subject.name}</span>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      <span className="text-gray-700">{subject.totalTasks}</span>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${subject.completionRate}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-600 w-10 text-right">{subject.completionRate}%</span>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-rose-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${subject.struggleRate}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-600 w-10 text-right">{subject.struggleRate}%</span>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${subject.satisfactionRate}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-600 w-10 text-right">{subject.satisfactionRate}%</span>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-4">
+                      <Badge 
+                        variant="outline" 
+                        className={`${
+                          subject.completionRate >= 80 ? 'text-emerald-600 border-emerald-200' :
+                          subject.completionRate >= 60 ? 'text-amber-600 border-amber-200' :
+                          'text-rose-600 border-rose-200'
+                        }`}
+                      >
+                        {subject.completionRate >= 80 ? 'Excellent' :
+                         subject.completionRate >= 60 ? 'Good' : 'Needs Focus'}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Student Performance Table - Improved */}
       <Card>

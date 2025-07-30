@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTasks } from '@/hooks/useTasks';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,7 @@ interface EditTaskDialogProps {
 export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps) => {
   const { updateTask, isUpdating } = useTasks();
   const { subjects, loading: subjectsLoading } = useSubjects();
+  const { toast } = useToast();
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TaskFormData>();
 
   const selectedSubjectId = watch('subject_id');
@@ -49,10 +51,20 @@ export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps
   const onSubmit = async (data: TaskFormData) => {
     if (!task) return;
     
+    // Validate that subject is selected (since Select component doesn't use register)
+    if (!selectedSubjectId) {
+      toast({
+        title: "Error",
+        description: "Please select a subject area.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const updates = {
       title: data.title,
       description: data.description || null,
-      subject_id: data.subject_id
+      subject_id: selectedSubjectId // Use the watched value instead of form data
     };
 
     // Use optimistic update method
@@ -116,7 +128,7 @@ export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps
                   ))}
                 </SelectContent>
               </Select>
-              {errors.subject_id && (
+              {!selectedSubjectId && (
                 <p className="text-sm text-red-600">Please select a subject area</p>
               )}
             </div>
@@ -125,7 +137,7 @@ export const EditTaskDialog = ({ task, open, onOpenChange }: EditTaskDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isUpdating}>
+            <Button type="submit" disabled={isUpdating || !selectedSubjectId}>
               {isUpdating ? 'Saving...' : 'Save changes'}
             </Button>
           </DialogFooter>
