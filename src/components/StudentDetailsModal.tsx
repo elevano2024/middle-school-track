@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/useTasks';
 import { useAttendance } from '@/hooks/useAttendance';
 import { useSubjects } from '@/hooks/useSubjects';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Download, 
   Mail, 
@@ -20,7 +21,9 @@ import {
   Eye,
   TrendingUp,
   Award,
-  Target
+  Target,
+  Send,
+  Loader2
 } from 'lucide-react';
 
 interface Student {
@@ -77,7 +80,23 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
         };
       }
       acc[subjectName].total++;
-      acc[subjectName][task.status.replace('-', '') as keyof typeof acc[string]]++;
+      
+      // Map task status to the correct property name
+      switch (task.status) {
+        case 'completed':
+          acc[subjectName].completed++;
+          break;
+        case 'working':
+          acc[subjectName].working++;
+          break;
+        case 'need-help':
+          acc[subjectName].needHelp++;
+          break;
+        case 'ready-review':
+          acc[subjectName].readyReview++;
+          break;
+      }
+      
       return acc;
     }, {} as Record<string, any>);
 
@@ -232,9 +251,53 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
 
     setIsSharing(true);
     try {
-      // Create email content
-      const emailSubject = `Student Progress Report - ${student.name}`;
-      const emailBody = `
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to send reports.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Prepare data for the email service
+      const emailData = {
+        recipientEmail: emailAddress.trim(),
+        studentData: {
+          name: student.name,
+          email: student.email,
+          grade: student.grade,
+          id: student.id
+        },
+        analytics: studentAnalytics,
+        senderName: session.user.user_metadata?.full_name || session.user.email
+      };
+
+      // Call the Edge Function
+      const { data, error } = await supabase.functions.invoke('send-student-report', {
+        body: emailData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Email service error:', error);
+        
+        // Fallback to mailto if service is not available
+        if (error.message?.includes('Email service not configured') || error.message?.includes('RESEND_API_KEY')) {
+          toast({
+            title: "Email Service Unavailable",
+            description: "Falling back to your email client...",
+            variant: "destructive"
+          });
+          
+          // Create simplified email content for mailto fallback
+          const emailSubject = `Student Progress Report - ${student.name}`;
+          const emailBody = `
 Dear Parent/Guardian,
 
 Please find below the progress report for ${student.name}:
@@ -266,24 +329,37 @@ If you have any questions about your child's progress, please don't hesitate to 
 
 Best regards,
 The Teaching Team
-      `;
+          `;
 
-      // For now, we'll use mailto since we don't have email service set up
-      // In production, you'd want to use a proper email service like SendGrid, AWS SES, etc.
-      const mailtoLink = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      window.open(mailtoLink);
+          const mailtoLink = `mailto:${emailAddress}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+          window.open(mailtoLink);
+          
+          toast({
+            title: "Email Client Opened",
+            description: `Your email client should open with the report for ${emailAddress}`,
+          });
+        } else {
+          toast({
+            title: "Failed to Send Email",
+            description: error.message || "There was an error sending the email. Please try again.",
+            variant: "destructive"
+          });
+        }
+        return;
+      }
 
+      // Success!
       toast({
-        title: "Email Prepared",
-        description: `Progress report email has been prepared for ${emailAddress}. Your email client should open automatically.`
+        title: "Email Sent Successfully! 📧",
+        description: `Beautiful progress report sent to ${emailAddress}`,
       });
 
       setEmailAddress('');
     } catch (error) {
       console.error('Email share error:', error);
       toast({
-        title: "Share Failed",
-        description: "There was an error preparing the email. Please try again.",
+        title: "Failed to Send Email",
+        description: "There was an error sending the email. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -473,15 +549,29 @@ The Teaching Team
                     value={emailAddress}
                     onChange={(e) => setEmailAddress(e.target.value)}
                     className="flex-1"
+                    disabled={isSharing}
                   />
                   <Button 
                     onClick={handleEmailShare}
                     disabled={isSharing || !emailAddress}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   >
-                    <Mail className="h-4 w-4 mr-2" />
-                    {isSharing ? 'Sending...' : 'Send'}
+                    {isSharing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Report
+                      </>
+                    )}
                   </Button>
                 </div>
+                <p className="text-xs text-gray-500">
+                  ✨ Sends a beautifully formatted HTML email with complete progress analytics
+                </p>
               </div>
             </CardContent>
           </Card>

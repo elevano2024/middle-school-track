@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -12,7 +13,7 @@ import HelpTooltip from '../components/HelpTooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import { TaskStatus } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { FilterX, Users, UserCheck, RefreshCw, ChevronDown, Check } from 'lucide-react';
+import { FilterX, Users, UserCheck, RefreshCw, ChevronDown, Check, Monitor, MonitorX } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +25,7 @@ type AttendanceFilter = 'all' | 'present' | 'absent';
 const Index = () => {
   const { user } = useAuth();
   const { isAdmin, isTeacher, isStudent } = useUserRole();
+  const { isPresentationMode, togglePresentationMode } = usePresentationMode();
   const { students, refetch: refetchStudents } = useStudents();
   const { subjects, refetch: refetchSubjects } = useSubjects();
   const { tasks, updateTask, refetch: refetchTasks, isRefetching } = useTasks();
@@ -36,6 +38,9 @@ const Index = () => {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+
+  // Only teachers and admins can manage tasks and use presentation mode
+  const canManageTasks = isAdmin || isTeacher;
 
   // Add debugging for subjects data
   React.useEffect(() => {
@@ -282,6 +287,76 @@ const Index = () => {
     }
   };
 
+  // In presentation mode, only show the FleetBoard with minimal styling
+  if (isPresentationMode) {
+    // Force more aggressive data refresh in presentation mode
+    React.useEffect(() => {
+      const interval = setInterval(() => {
+        console.log('🔄 Presentation mode: Force refreshing data...');
+        refetchTasks();
+        refetchStudents();
+        refetchSubjects();
+        refetchAttendance();
+      }, 5000); // Every 5 seconds in presentation mode
+
+      return () => clearInterval(interval);
+    }, [refetchTasks, refetchStudents, refetchSubjects, refetchAttendance]);
+
+    return (
+      <div className="w-full min-h-screen p-4">
+        {/* Simple header for presentation mode */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+              Live Student Progress
+            </h1>
+            {/* Live Update Indicator */}
+            <div className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full border border-green-200">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-green-700">LIVE</span>
+            </div>
+            {canManageTasks && (
+              <Button
+                onClick={togglePresentationMode}
+                variant="default"
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 hover:shadow-md text-white border-purple-600 transition-all duration-200"
+              >
+                <MonitorX className="w-4 h-4 mr-2" />
+                Exit Presentation
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Refresh Status Indicator */}
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+              isRefetching || isManualRefreshing 
+                ? 'bg-blue-100 text-blue-700' 
+                : 'bg-white/80 text-blue-700'
+            }`}>
+              <RefreshCw className={`w-4 h-4 ${isRefetching || isManualRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefetching || isManualRefreshing ? 'Updating...' : 'Synced'}</span>
+            </div>
+            {/* Stats */}
+            <div className="text-sm text-blue-700 bg-white/80 px-4 py-2 rounded-lg">
+              {filteredStudents.length} students • {filteredSubjects.length} subjects • Auto-refresh every 5s
+            </div>
+          </div>
+        </div>
+        
+        <FleetBoard 
+          students={filteredStudents}
+          subjects={filteredSubjects}
+          tasks={transformedTasks}
+          onUpdateTaskStatus={handleUpdateTaskStatus}
+          getTasksForStudent={getTasksForStudent}
+          statusFilter={statusFilter}
+        />
+      </div>
+    );
+  }
+
+  // Normal mode with all UI elements
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -300,6 +375,30 @@ const Index = () => {
           />
         </div>
         <div className="flex items-center gap-3">
+          {/* Presentation Mode Button - Only for Teachers and Admins */}
+          {canManageTasks && (
+            <HelpTooltip
+              title="Presentation Mode"
+              content={[
+                "Switch to presentation mode for TV displays.",
+                "Hides sidebar, filters, and other controls.",
+                "Shows only the task board for student visibility.",
+                "Perfect for classroom displays and projectors."
+              ]}
+              size="sm"
+            />
+          )}
+          {canManageTasks && (
+            <Button
+              onClick={togglePresentationMode}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-800 transition-all duration-200 hover:shadow-sm"
+            >
+              <Monitor className="w-4 h-4" />
+              Presentation Mode
+            </Button>
+          )}
           <HelpTooltip
             title="Refresh Data"
             content={[
@@ -314,7 +413,7 @@ const Index = () => {
             disabled={isManualRefreshing || isRefetching}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-800 transition-all duration-200 hover:shadow-sm disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:border-blue-300 disabled:hover:text-blue-700 disabled:hover:shadow-none"
           >
             <RefreshCw 
               className={`w-4 h-4 ${isManualRefreshing || isRefetching ? 'animate-spin' : ''}`} 

@@ -116,7 +116,14 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
           title: "Success",
           description: `Learning activity assigned to ${data.student_ids.length} students successfully!`,
         });
-        reset();
+        
+        // Properly reset all form fields including subject selection
+        reset({
+          title: '',
+          description: '',
+          subject_id: '',
+          student_ids: []
+        });
         setSelectedStudents([]);
         
         // Call the callback if provided (for manual refresh as backup)

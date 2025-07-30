@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
@@ -14,6 +15,7 @@ interface ProtectedLayoutProps {
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const { isStudent, isAdmin, isTeacher, loading: roleLoading, error: roleError } = useUserRole();
+  const { isPresentationMode } = usePresentationMode();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -80,6 +82,18 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
 
   // Admin/Teacher layout with sidebar
   if (isAdmin || isTeacher) {
+    // Presentation mode - hide sidebar and padding for full-screen view
+    if (isPresentationMode) {
+      return (
+        <main className="flex-1 overflow-auto w-full">
+          <div className="bg-gradient-to-br from-blue-50/30 via-indigo-50/30 to-purple-50/30 min-h-screen">
+            {children}
+          </div>
+        </main>
+      );
+    }
+
+    // Normal mode with sidebar
     return (
       <>
         <AppSidebar />
