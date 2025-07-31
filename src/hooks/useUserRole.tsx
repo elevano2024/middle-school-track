@@ -44,7 +44,7 @@ export const useUserRole = () => {
       return null;
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 30, // Cache for 30 seconds only
     gcTime: 1000 * 60 * 10, // Keep in garbage collection for 10 minutes
     refetchOnWindowFocus: false,
     retry: (failureCount, error) => {

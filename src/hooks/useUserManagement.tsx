@@ -235,7 +235,13 @@ export const useUserManagement = () => {
         return false;
       }
 
-      toast.success('User created successfully');
+      // Check if role assignment was successful
+      if (data?.role) {
+        toast.success(`User created successfully with ${data.role} access!`);
+      } else {
+        toast.success('User created successfully');
+      }
+      
       await fetchProfiles();
       return true;
     } catch (error) {

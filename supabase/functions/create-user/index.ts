@@ -81,8 +81,68 @@ serve(async (req) => {
       )
     }
 
+    // Auto-assign 'student' role to new users - CRITICAL for access
+    if (!data.user) {
+      return new Response(
+        JSON.stringify({ error: 'User creation failed - no user data returned' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Assign role and ENSURE it succeeds
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .insert({
+        user_id: data.user.id,
+        role: 'student'
+      })
+      .select()
+
+    if (roleError) {
+      console.error('CRITICAL: Role assignment failed for user:', data.user.id, roleError)
+      
+      // ROLLBACK: Delete the auth user if role assignment fails
+      await supabaseAdmin.auth.admin.deleteUser(data.user.id)
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Failed to assign user role: ${roleError.message}. User creation cancelled.`,
+          details: 'This prevents users from being created without proper access permissions.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Verify role was actually assigned
+    const { data: verifyRole, error: verifyError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .single()
+
+    if (verifyError || !verifyRole) {
+      console.error('CRITICAL: Role verification failed for user:', data.user.id)
+      
+      // ROLLBACK: Delete the auth user
+      await supabaseAdmin.auth.admin.deleteUser(data.user.id)
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to verify user role assignment. User creation cancelled.',
+          details: 'This ensures all users have proper access permissions before login.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`✅ User created successfully with ${verifyRole.role} role:`, data.user.email)
+
     return new Response(
-      JSON.stringify({ data }),
+      JSON.stringify({ 
+        data,
+        role: verifyRole.role,
+        message: `User created successfully with ${verifyRole.role} access`
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
