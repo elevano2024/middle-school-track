@@ -3,6 +3,7 @@ import { MoreVertical, Clock, Edit, Trash2, UserPlus, Users, MessageSquare } fro
 import { Task as WorkflowTask, TaskStatus } from '../types/workflow';
 import { Task as ApiTask } from '@/types/task';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
@@ -28,6 +29,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   const [feedbackTask, setFeedbackTask] = useState<ApiTask | null>(null);
   
   const { isAdmin, isTeacher, isStudent } = useUserRole();
+  const { isPresentationMode } = usePresentationMode();
   
   // Only teachers and admins can manage tasks
   const canManageTasks = isAdmin || isTeacher;
@@ -161,42 +163,75 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   };
 
   return (
-    <div className={`w-64 min-w-64 max-w-64 border rounded-xl p-3 transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''}`}>
-      <div className="flex items-start justify-between mb-2">
-        <h4 className="text-sm font-semibold line-clamp-2 flex-1 pr-2">{task.title}</h4>
-        <div className="flex items-center flex-shrink-0">
-          <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1 shadow-sm`}></div>
-          <button
-            onClick={handleIconClick}
-            className={`p-1.5 rounded-full transition-all duration-200 flex-shrink-0 border ${
-              isExpanded 
-                ? 'bg-white/90 shadow-sm border-white/70 text-gray-800' 
-                : 'hover:bg-white/80 hover:shadow-sm border-transparent hover:border-white/50 text-gray-600 hover:text-gray-800'
-            }`}
-            disabled={isUpdating}
-            title={canManageTasks ? "Task options" : "Change status"}
-          >
-            <MoreVertical className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-          </button>
+    <div className={`border rounded-xl transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''} ${
+      isPresentationMode 
+        ? 'w-full min-w-0 max-w-none p-1'
+        : 'w-64 min-w-64 max-w-64 p-3'
+    }`}>
+      {isPresentationMode ? (
+        // Ultra-minimal presentation mode layout - just status and time
+        <div className="text-center space-y-0.5">
+          <div className={`text-xs font-bold px-1 py-0.5 rounded ${
+            task.status === 'working' ? 'bg-blue-500 text-white' :
+            task.status === 'need-help' ? 'bg-red-500 text-white' :
+            task.status === 'ready-review' ? 'bg-amber-500 text-white' :
+            'bg-green-500 text-white'
+          }`}>
+            {task.status === 'working' ? 'WORK' :
+             task.status === 'need-help' ? 'HELP' :
+             task.status === 'ready-review' ? 'REVIEW' :
+             'DONE'}
+          </div>
+          {task.timeInStatus > 0 && (
+            <div className="text-xs font-bold text-gray-700">
+              {task.timeInStatus}m
+            </div>
+          )}
+          {task.teacher_feedback_type && (
+            <div className="text-xs text-purple-700">✓</div>
+          )}
         </div>
-      </div>
-      
-      <div className="text-xs font-medium mb-2 px-2 py-1 bg-white/50 rounded-md inline-block">{statusConfig.label}</div>
-      
-      {task.timeInStatus > 0 && (
-        <div className="flex items-center text-xs text-gray-600 mb-2 bg-white/30 rounded-md px-2 py-1">
-          <Clock className="w-3 h-3 mr-1" />
-          {task.timeInStatus}m
-        </div>
+      ) : (
+        // Normal mode layout
+        <>
+          <div className="flex items-start justify-between mb-2">
+            <h4 className="text-sm font-semibold line-clamp-2 flex-1 pr-2">{task.title}</h4>
+            <div className="flex items-center flex-shrink-0">
+              <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1 shadow-sm`}></div>
+              <button
+                onClick={handleIconClick}
+                className={`p-1.5 rounded-full transition-all duration-200 flex-shrink-0 border ${
+                  isExpanded 
+                    ? 'bg-white/90 shadow-sm border-white/70 text-gray-800' 
+                    : 'hover:bg-white/80 hover:shadow-sm border-transparent hover:border-white/50 text-gray-600 hover:text-gray-800'
+                }`}
+                disabled={isUpdating}
+                title={canManageTasks ? "Task options" : "Change status"}
+              >
+                <MoreVertical className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="text-xs font-medium mb-2 px-2 py-1 bg-white/50 rounded-md inline-block">{statusConfig.label}</div>
+          
+          {task.timeInStatus > 0 && (
+            <div className="flex items-center text-xs text-gray-600 mb-2 bg-white/30 rounded-md px-2 py-1">
+              <Clock className="w-3 h-3 mr-1" />
+              {task.timeInStatus}m
+            </div>
+          )}
+
+          {updateError && (
+            <div className="text-xs text-rose-700 mb-2 p-2 bg-rose-100/70 rounded border border-rose-200">
+              {updateError}
+            </div>
+          )}
+        </>
       )}
 
-      {updateError && (
-        <div className="text-xs text-rose-700 mb-2 p-2 bg-rose-100/70 rounded border border-rose-200">
-          {updateError}
-        </div>
-      )}
-
-      {isExpanded && (
+      {/* Only show expanded view in normal mode */}
+      {isExpanded && !isPresentationMode && (
         <div className="mt-4 pt-4 border-t border-white/40 space-y-4">
           {/* Task Description */}
           <div className="bg-white/50 rounded-lg p-3 border border-white/30 shadow-sm">

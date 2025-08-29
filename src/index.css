@@ -110,4 +110,29 @@
   .sidebar-nav-link.active:hover {
     color: white !important;
   }
+
+  /* Presentation Mode Table Optimization */
+  .presentation-mode-optimized table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .presentation-mode-optimized th,
+  .presentation-mode-optimized td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Better text scaling for large displays */
+  @media (min-width: 2560px) {
+    .presentation-mode-optimized {
+      font-size: 1.1em;
+    }
+  }
+
+  @media (min-width: 3840px) {
+    .presentation-mode-optimized {
+      font-size: 1.2em;
+    }
+  }
 }
