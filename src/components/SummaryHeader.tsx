@@ -81,70 +81,70 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 p-8 mb-6">
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 p-4 md:p-8 mb-4 md:mb-6">
       {onStatusFilter && activeFilter !== 'all' && (
-        <div className="flex justify-end mb-6">
-          <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+        <div className="flex justify-center md:justify-end mb-4 md:mb-6">
+          <div className="text-xs md:text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
             Click the same tile again to clear filter
           </div>
         </div>
       )}
       
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <div 
           className={getTileStyles(
             'working',
-            "text-center p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/50 shadow-sm"
+            "text-center p-3 md:p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/50 shadow-sm"
           )}
           onClick={() => handleTileClick('working')}
           role={onStatusFilter ? "button" : undefined}
           tabIndex={onStatusFilter ? 0 : undefined}
-          title={onStatusFilter ? "Click to filter by Working tasks" : undefined}
+          title={onStatusFilter ? "Filter by Working tasks" : undefined}
         >
-          <div className="text-2xl font-bold text-blue-600 mb-1">{counts.working}</div>
-          <div className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Working</div>
+          <div className="text-2xl md:text-3xl font-bold text-blue-700">{counts.working}</div>
+          <div className="text-xs md:text-sm font-semibold text-blue-600 uppercase tracking-wide mt-1">WORKING</div>
         </div>
-        
+
         <div 
           className={getTileStyles(
             'need-help',
-            "text-center p-5 bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl border border-rose-200/50 shadow-sm"
+            "text-center p-3 md:p-5 bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl border border-rose-200/50 shadow-sm"
           )}
           onClick={() => handleTileClick('need-help')}
           role={onStatusFilter ? "button" : undefined}
           tabIndex={onStatusFilter ? 0 : undefined}
-          title={onStatusFilter ? "Click to filter by Need Help tasks" : undefined}
+          title={onStatusFilter ? "Filter by Need Help tasks" : undefined}
         >
-          <div className="text-2xl font-bold text-rose-600 mb-1">{counts.needHelp}</div>
-          <div className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Need Help</div>
+          <div className="text-2xl md:text-3xl font-bold text-rose-700">{counts.needHelp}</div>
+          <div className="text-xs md:text-sm font-semibold text-rose-600 uppercase tracking-wide mt-1">NEED HELP</div>
         </div>
-        
+
         <div 
           className={getTileStyles(
             'ready-review',
-            "text-center p-5 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200/50 shadow-sm"
+            "text-center p-3 md:p-5 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200/50 shadow-sm"
           )}
           onClick={() => handleTileClick('ready-review')}
           role={onStatusFilter ? "button" : undefined}
           tabIndex={onStatusFilter ? 0 : undefined}
-          title={onStatusFilter ? "Click to filter by Ready for Review tasks" : undefined}
+          title={onStatusFilter ? "Filter by Ready for Review tasks" : undefined}
         >
-          <div className="text-2xl font-bold text-amber-600 mb-1">{counts.readyReview}</div>
-          <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Ready Review</div>
+          <div className="text-2xl md:text-3xl font-bold text-amber-700">{counts.readyReview}</div>
+          <div className="text-xs md:text-sm font-semibold text-amber-600 uppercase tracking-wide mt-1">READY REVIEW</div>
         </div>
-        
+
         <div 
           className={getTileStyles(
             'completed',
-            "text-center p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200/50 shadow-sm"
+            "text-center p-3 md:p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200/50 shadow-sm"
           )}
           onClick={() => handleTileClick('completed')}
           role={onStatusFilter ? "button" : undefined}
           tabIndex={onStatusFilter ? 0 : undefined}
-          title={onStatusFilter ? "Click to filter by Completed tasks" : undefined}
+          title={onStatusFilter ? "Filter by Completed tasks" : undefined}
         >
-          <div className="text-2xl font-bold text-emerald-600 mb-1">{counts.completed}</div>
-          <div className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Completed</div>
+          <div className="text-2xl md:text-3xl font-bold text-emerald-700">{counts.completed}</div>
+          <div className="text-xs md:text-sm font-semibold text-emerald-600 uppercase tracking-wide mt-1">COMPLETED</div>
         </div>
       </div>
     </div>

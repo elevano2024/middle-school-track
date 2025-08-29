@@ -166,36 +166,31 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
     <div className={`border rounded-xl transition-all duration-200 hover:shadow-md ${statusConfig.color} ${statusConfig.ring} hover:ring-2 ${isUpdating ? 'opacity-50' : ''} ${
       isPresentationMode 
         ? 'w-full min-w-0 max-w-none p-1'
-        : 'w-64 min-w-64 max-w-64 p-3'
+        : 'w-full min-w-0 max-w-none md:w-64 md:min-w-64 md:max-w-64 p-2 md:p-3'
     }`}>
       {isPresentationMode ? (
-        // Ultra-minimal presentation mode layout - just status and time
+        // Ultra-minimal presentation mode layout - show task name instead of status
         <div className="text-center space-y-0.5">
-          <div className={`text-xs font-bold px-1 py-0.5 rounded ${
-            task.status === 'working' ? 'bg-blue-500 text-white' :
-            task.status === 'need-help' ? 'bg-red-500 text-white' :
-            task.status === 'ready-review' ? 'bg-amber-500 text-white' :
-            'bg-green-500 text-white'
-          }`}>
-            {task.status === 'working' ? 'WORK' :
-             task.status === 'need-help' ? 'HELP' :
-             task.status === 'ready-review' ? 'REVIEW' :
-             'DONE'}
+          <div className="text-xs font-semibold px-1 py-1 bg-white/50 rounded text-center leading-tight" title={task.title}>
+            {task.title}
           </div>
           {task.timeInStatus > 0 && (
-            <div className="text-xs font-bold text-gray-700">
+            <div className="flex items-center justify-center text-xs text-gray-600 bg-white/30 rounded px-1 py-0.5">
+              <Clock className="w-3 h-3 mr-1" />
               {task.timeInStatus}m
             </div>
           )}
           {task.teacher_feedback_type && (
-            <div className="text-xs text-purple-700">✓</div>
+            <div className="text-xs font-semibold text-purple-700 bg-purple-100/60 rounded px-1 py-0.5">
+              ✓
+            </div>
           )}
         </div>
       ) : (
-        // Normal mode layout
+        // Normal mode layout - optimized for iPad
         <>
           <div className="flex items-start justify-between mb-2">
-            <h4 className="text-sm font-semibold line-clamp-2 flex-1 pr-2">{task.title}</h4>
+            <h4 className="text-sm md:text-sm font-semibold line-clamp-2 flex-1 pr-2">{task.title}</h4>
             <div className="flex items-center flex-shrink-0">
               <div className={`w-2 h-2 rounded-full ${statusConfig.dotColor} flex-shrink-0 mr-2 mt-1 shadow-sm`}></div>
               <button
@@ -255,7 +250,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
               <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
               <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Change Status</div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {getStatusOptions().map(status => (
                 <button
                   key={status}

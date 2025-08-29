@@ -77,7 +77,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
       }`}>
         {/* Filter indicator for the table */}
         {statusFilter !== 'all' && !isPresentationMode && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-blue-200">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 md:px-6 py-3 border-b border-blue-200">
             <p className="text-sm text-blue-700">
               <span className="font-medium">Filtered View:</span> Only showing{' '}
               <span className="font-semibold">{getFilterDisplayText()}</span> tasks and relevant students/subjects
@@ -93,7 +93,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                   <th className={`text-left font-semibold text-blue-900 sticky left-0 bg-gradient-to-r from-blue-50 to-indigo-50 z-10 border-r border-blue-200 ${
                     isPresentationMode 
                       ? 'px-1 py-1 text-xs w-[70px] max-w-[70px]'
-                      : 'px-6 py-4 text-sm min-w-[140px]'
+                      : 'px-3 md:px-6 py-3 md:py-4 text-sm min-w-[100px] md:min-w-[140px]'
                   }`}>
                     Student
                   </th>
@@ -101,9 +101,9 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                     <th key={subject} className={`text-center font-semibold text-blue-900 border-r border-blue-100 last:border-r-0 ${
                       isPresentationMode
                         ? 'px-0.5 py-1 text-xs w-[90px] max-w-[90px]'
-                        : 'px-4 py-4 text-sm min-w-[180px]'
+                        : 'px-2 md:px-4 py-3 md:py-4 text-sm min-w-[140px] md:min-w-[180px]'
                     }`}>
-{isPresentationMode ? subject.replace(/^(Math-|IXL-)?/, '').substring(0, 5) : subject}
+                      {isPresentationMode ? subject.replace(/^(Math-|IXL-)?/, '').substring(0, 5) : subject}
                     </th>
                   ))}
                 </tr>
@@ -114,11 +114,11 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                     <td className={`font-medium text-gray-900 bg-blue-50/50 sticky left-0 z-10 border-r border-blue-200 ${
                       isPresentationMode
                         ? 'px-1 py-1 text-xs w-[70px] max-w-[70px]'
-                        : 'px-6 py-4 text-sm'
+                        : 'px-3 md:px-6 py-3 md:py-4 text-sm'
                     }`}>
-                      <div className={`flex items-center ${isPresentationMode ? 'gap-0.5' : 'gap-3'}`}>
+                      <div className={`flex items-center ${isPresentationMode ? 'gap-0.5' : 'gap-2 md:gap-3'}`}>
                         <AttendanceIndicator studentId={student.id} showControls={!isPresentationMode} />
-                        <span className={`text-blue-900 ${isPresentationMode ? 'text-xs truncate' : ''}`} title={student.name}>
+                        <span className={`text-blue-900 ${isPresentationMode ? 'text-xs truncate' : 'text-sm truncate md:text-base'}`} title={student.name}>
                           {isPresentationMode ? student.name.split(' ')[0].substring(0, 6) : student.name}
                         </span>
                       </div>
@@ -129,9 +129,9 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                         <td key={`${student.id}-${subject}`} className={`align-top border-r border-blue-100 last:border-r-0 ${
                           isPresentationMode 
                             ? 'px-0.5 py-0.5 min-h-[30px] w-[90px] max-w-[90px]'
-                            : 'px-3 py-3 min-h-[100px]'
+                            : 'px-2 md:px-3 py-2 md:py-3 min-h-[80px] md:min-h-[100px]'
                         }`}>
-                          <div className={isPresentationMode ? 'space-y-0.5' : 'space-y-2'}>
+                          <div className={isPresentationMode ? 'space-y-0.5' : 'space-y-1 md:space-y-2'}>
                             {subjectTasks.length > 0 ? (
                               subjectTasks.map(task => (
                                 <TaskCard
