@@ -37,26 +37,26 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
   if (isStudent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 w-full">
-        <header className="bg-white/80 backdrop-blur-sm border-b border-blue-100 py-4 shadow-sm">
-          <div className="flex items-center justify-between px-6">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+        <header className="bg-white/80 backdrop-blur-sm border-b border-blue-100 py-3 md:py-4 shadow-sm">
+          <div className="flex items-center justify-between px-4 md:px-6">
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
                   <img 
                     src="https://risingsunmontessori.org/wp-content/uploads/2022/02/logo-e1709591143216.jpg" 
                     alt="Rising Sun Montessori School Logo"
-                    className="w-6 h-6 object-contain"
+                    className="w-4 h-4 md:w-6 md:h-6 object-contain"
                   />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">ARCC</h1>
-                  <span className="text-xs text-blue-600">Student Progress Tracker</span>
+                  <h1 className="text-base md:text-lg font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">ARCC</h1>
+                  <span className="text-xs text-blue-600 hidden sm:block">Student Progress Tracker</span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-blue-700 font-medium">
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <span className="text-xs md:text-sm text-blue-700 font-medium hidden sm:block">
                 Welcome, {user.email?.split('@')[0]}
               </span>
               <CheckInButton />
@@ -64,10 +64,10 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleSignOut}
-                className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="flex items-center gap-1 md:gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 px-2 md:px-3"
               >
-                <LogOut className="h-4 w-4" />
-                Sign Out
+                <LogOut className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           </div>
@@ -93,12 +93,12 @@ const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
       );
     }
 
-    // Normal mode with sidebar
+    // Normal mode with sidebar - responsive for iPad
     return (
       <>
         <AppSidebar />
         <main className="flex-1 overflow-auto">
-          <div className="p-6 bg-gradient-to-br from-blue-50/30 via-indigo-50/30 to-purple-50/30 min-h-screen">
+          <div className="p-3 md:p-6 bg-gradient-to-br from-blue-50/30 via-indigo-50/30 to-purple-50/30 min-h-screen">
             {children}
           </div>
         </main>

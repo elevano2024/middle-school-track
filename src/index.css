@@ -123,6 +123,40 @@
     text-overflow: ellipsis;
   }
 
+  /* iPad-specific optimizations */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Tablet-friendly task cards */
+    .task-card-tablet {
+      min-width: 0;
+      width: 100%;
+      max-width: none;
+    }
+
+    /* Optimize table for iPad landscape */
+    .fleet-board-tablet table {
+      font-size: 0.9rem;
+    }
+
+    .fleet-board-tablet th {
+      padding: 0.75rem 0.5rem;
+      min-width: 120px;
+    }
+
+    .fleet-board-tablet td {
+      padding: 0.5rem;
+    }
+
+    /* Student dashboard tablet optimization */
+    .student-dashboard-tablet {
+      padding: 1rem;
+    }
+
+    .student-dashboard-tablet .task-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+  }
+
   /* Better text scaling for large displays */
   @media (min-width: 2560px) {
     .presentation-mode-optimized {

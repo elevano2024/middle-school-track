@@ -358,10 +358,10 @@ const Index = () => {
 
   // Normal mode with all UI elements
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
             Student Progress Overview
           </h1>
           <HelpTooltip
@@ -374,7 +374,7 @@ const Index = () => {
             ]}
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           {/* Presentation Mode Button - Only for Teachers and Admins */}
           {canManageTasks && (
             <HelpTooltip
@@ -396,7 +396,8 @@ const Index = () => {
               className="flex items-center gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-800 transition-all duration-200 hover:shadow-sm"
             >
               <Monitor className="w-4 h-4" />
-              Presentation Mode
+              <span className="hidden sm:inline">Presentation Mode</span>
+              <span className="sm:hidden">Present</span>
             </Button>
           )}
           <HelpTooltip
@@ -418,14 +419,14 @@ const Index = () => {
             <RefreshCw 
               className={`w-4 h-4 ${isManualRefreshing || isRefetching ? 'animate-spin' : ''}`} 
             />
-            {isManualRefreshing || isRefetching ? 'Refreshing...' : 'Refresh Data'}
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>
       
       <SummaryHeader 
         tasks={transformedTasks} 
-        onStatusFilter={handleStatusFilterChange}
+        onStatusFilter={setStatusFilter}
         activeFilter={statusFilter}
       />
 

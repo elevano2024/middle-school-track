@@ -118,10 +118,10 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" style={{ width: '100%' }}>
-      <div className="w-full px-6 py-6 space-y-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">My Learning Dashboard</h1>
-          <p className="text-blue-600">Track your progress and update your task status</p>
+      <div className="w-full px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">My Learning Dashboard</h1>
+          <p className="text-sm md:text-base text-blue-600">Track your progress and update your task status</p>
         </div>
 
         <SummaryHeader 
@@ -132,8 +132,8 @@ const StudentDashboard = () => {
 
         {/* Filter Status Bar */}
         {statusFilter !== 'all' && (
-          <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 md:p-4 shadow-sm gap-3 sm:gap-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <span className="text-sm font-medium text-blue-900">
                 Showing: <span className="font-bold">{getFilterDisplayText()}</span> tasks
               </span>
@@ -145,7 +145,7 @@ const StudentDashboard = () => {
               onClick={clearFilter}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+              className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100 w-full sm:w-auto"
             >
               <FilterX className="w-4 h-4" />
               Show All Tasks
@@ -154,7 +154,7 @@ const StudentDashboard = () => {
         )}
 
         <Card className="w-full bg-white/80 backdrop-blur-sm shadow-lg border-blue-100 overflow-hidden">
-          <CardContent className="p-6">
+          <CardContent className="p-3 md:p-6">
             {subjectsWithTasks.length > 0 ? (
               <ScrollArea className="w-full">
                 <div className="min-w-fit">
@@ -162,7 +162,7 @@ const StudentDashboard = () => {
                     <TableHeader>
                       <TableRow>
                         {subjectsWithTasks.map(subject => (
-                          <TableHead key={subject} className="text-center font-semibold text-blue-900 bg-gradient-to-r from-blue-50 to-indigo-50 min-w-[280px]">
+                          <TableHead key={subject} className="text-center font-semibold text-blue-900 bg-gradient-to-r from-blue-50 to-indigo-50 min-w-[200px] md:min-w-[280px] px-2 md:px-4">
                             {subject}
                           </TableHead>
                         ))}
@@ -171,8 +171,8 @@ const StudentDashboard = () => {
                     <TableBody>
                       <TableRow>
                         {subjectsWithTasks.map(subject => (
-                          <TableCell key={subject} className="align-top p-4 min-w-[280px]">
-                            <div className="space-y-3">
+                          <TableCell key={subject} className="align-top p-2 md:p-4 min-w-[200px] md:min-w-[280px]">
+                            <div className="space-y-2 md:space-y-3">
                               {tasksBySubject[subject].map(task => (
                                 <TaskCard
                                   key={task.id}
@@ -190,12 +190,12 @@ const StudentDashboard = () => {
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             ) : statusFilter !== 'all' ? (
-              <div className="text-center py-8">
-                <ClipboardList className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-blue-900 mb-2">
+              <div className="text-center py-6 md:py-8">
+                <ClipboardList className="h-10 w-10 md:h-12 md:w-12 text-blue-400 mx-auto mb-3 md:mb-4" />
+                <h3 className="text-base md:text-lg font-medium text-blue-900 mb-2">
                   No {getFilterDisplayText().toLowerCase()} tasks found
                 </h3>
-                <p className="text-blue-600 mb-4">
+                <p className="text-sm md:text-base text-blue-600 mb-3 md:mb-4">
                   You don't have any tasks with "{getFilterDisplayText().toLowerCase()}" status right now.
                 </p>
                 <Button onClick={clearFilter} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
