@@ -3,6 +3,7 @@ import { Student, Task, TaskStatus } from '../types/workflow';
 import TaskCard from './TaskCard';
 import AttendanceIndicator from './AttendanceIndicator';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { usePresentationMode } from '@/contexts/PresentationContext';
 
 type StatusFilter = TaskStatus | 'all';
 
@@ -24,6 +25,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   statusFilter = 'all'
 }) => {
   console.log('FleetBoard props:', { students, subjects, tasks, statusFilter });
+  const { isPresentationMode } = usePresentationMode();
 
   const getTasksForStudentAndSubject = (studentId: string, subject: string): Task[] => {
     const studentTasks = tasks.filter(task => task.studentId === studentId);
@@ -70,9 +72,11 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   return (
     <div className="space-y-6">
       {/* Fleet Board Grid */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 overflow-hidden">
+      <div className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-blue-100 overflow-hidden ${
+        isPresentationMode ? 'presentation-mode-optimized' : ''
+      }`}>
         {/* Filter indicator for the table */}
-        {statusFilter !== 'all' && (
+        {statusFilter !== 'all' && !isPresentationMode && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-blue-200">
             <p className="text-sm text-blue-700">
               <span className="font-medium">Filtered View:</span> Only showing{' '}
@@ -86,12 +90,20 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
             <table className="w-full">
               <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-blue-900 min-w-[140px] sticky left-0 bg-gradient-to-r from-blue-50 to-indigo-50 z-10 border-r border-blue-200">
+                  <th className={`text-left font-semibold text-blue-900 sticky left-0 bg-gradient-to-r from-blue-50 to-indigo-50 z-10 border-r border-blue-200 ${
+                    isPresentationMode 
+                      ? 'px-1 py-1 text-xs w-[70px] max-w-[70px]'
+                      : 'px-6 py-4 text-sm min-w-[140px]'
+                  }`}>
                     Student
                   </th>
                   {subjects.map(subject => (
-                    <th key={subject} className="px-4 py-4 text-center text-sm font-semibold text-blue-900 min-w-[180px] border-r border-blue-100 last:border-r-0">
-                      {subject}
+                    <th key={subject} className={`text-center font-semibold text-blue-900 border-r border-blue-100 last:border-r-0 ${
+                      isPresentationMode
+                        ? 'px-0.5 py-1 text-xs w-[90px] max-w-[90px]'
+                        : 'px-4 py-4 text-sm min-w-[180px]'
+                    }`}>
+{isPresentationMode ? subject.replace(/^(Math-|IXL-)?/, '').substring(0, 5) : subject}
                     </th>
                   ))}
                 </tr>
@@ -99,17 +111,27 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
               <tbody className="divide-y divide-blue-100">
                 {students.map(student => (
                   <tr key={student.id} className="hover:bg-blue-50/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 bg-blue-50/50 sticky left-0 z-10 border-r border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <AttendanceIndicator studentId={student.id} showControls={true} />
-                        <span className="text-blue-900">{student.name}</span>
+                    <td className={`font-medium text-gray-900 bg-blue-50/50 sticky left-0 z-10 border-r border-blue-200 ${
+                      isPresentationMode
+                        ? 'px-1 py-1 text-xs w-[70px] max-w-[70px]'
+                        : 'px-6 py-4 text-sm'
+                    }`}>
+                      <div className={`flex items-center ${isPresentationMode ? 'gap-0.5' : 'gap-3'}`}>
+                        <AttendanceIndicator studentId={student.id} showControls={!isPresentationMode} />
+                        <span className={`text-blue-900 ${isPresentationMode ? 'text-xs truncate' : ''}`} title={student.name}>
+                          {isPresentationMode ? student.name.split(' ')[0].substring(0, 6) : student.name}
+                        </span>
                       </div>
                     </td>
                     {subjects.map(subject => {
                       const subjectTasks = getTasksForStudentAndSubject(student.id, subject);
                       return (
-                        <td key={`${student.id}-${subject}`} className="px-3 py-3 min-h-[100px] align-top border-r border-blue-100 last:border-r-0">
-                          <div className="space-y-2">
+                        <td key={`${student.id}-${subject}`} className={`align-top border-r border-blue-100 last:border-r-0 ${
+                          isPresentationMode 
+                            ? 'px-0.5 py-0.5 min-h-[30px] w-[90px] max-w-[90px]'
+                            : 'px-3 py-3 min-h-[100px]'
+                        }`}>
+                          <div className={isPresentationMode ? 'space-y-0.5' : 'space-y-2'}>
                             {subjectTasks.length > 0 ? (
                               subjectTasks.map(task => (
                                 <TaskCard
@@ -118,15 +140,19 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
                                   onUpdateStatus={onUpdateTaskStatus}
                                 />
                               ))
-                            ) : statusFilter === 'all' ? (
-                              <div className="text-center py-4 text-sm text-gray-400">
-                                No tasks assigned
-                              </div>
-                            ) : (
-                              <div className="text-center py-4 text-sm text-gray-300 italic">
-                                —
-                              </div>
-                            )}
+                                                          ) : statusFilter === 'all' ? (
+                                <div className={`text-center text-gray-400 ${
+                                  isPresentationMode ? 'py-1 text-xs' : 'py-4 text-sm'
+                                }`}>
+                                  {isPresentationMode ? '—' : 'No tasks assigned'}
+                                </div>
+                              ) : (
+                                <div className={`text-center text-gray-300 italic ${
+                                  isPresentationMode ? 'py-1 text-xs' : 'py-4 text-sm'
+                                }`}>
+                                  —
+                                </div>
+                              )}
                           </div>
                         </td>
                       );
