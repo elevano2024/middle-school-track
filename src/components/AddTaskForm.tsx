@@ -92,7 +92,7 @@ export const AddTaskForm = ({ onTaskCreated }: AddTaskFormProps) => {
             description: data.description || null,
             student_id: studentId,
             subject_id: data.subject_id,
-            status: 'working'
+            status: 'todo'
           })
       );
 

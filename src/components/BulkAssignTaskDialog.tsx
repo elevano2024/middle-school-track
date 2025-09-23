@@ -119,7 +119,7 @@ export const BulkAssignTaskDialog = ({ task, open, onOpenChange }: BulkAssignTas
             description: task.description,
             subject_id: task.subject_id,
             student_id: studentId,
-            status: 'working'
+            status: 'todo'
           })
       );
 

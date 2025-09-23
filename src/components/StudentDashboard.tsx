@@ -97,6 +97,7 @@ const StudentDashboard = () => {
   // Get filter display text
   const getFilterDisplayText = () => {
     switch (statusFilter) {
+      case 'todo': return 'TO DO';
       case 'working': return 'Working';
       case 'need-help': return 'Need Help';
       case 'ready-review': return 'Ready for Review';
