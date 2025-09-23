@@ -237,6 +237,7 @@ const Index = () => {
   // Get filter display text
   const getFilterDisplayText = () => {
     switch (statusFilter) {
+      case 'todo': return 'TO DO';
       case 'working': return 'Working';
       case 'need-help': return 'Need Help';
       case 'ready-review': return 'Ready for Review';
@@ -369,7 +370,7 @@ const Index = () => {
             content={[
               "This dashboard shows all students and their real-time task progress.",
               "Students appear as cards organized by subject columns.",
-              "Task colors indicate status: Blue (Working), Red (Need Help), Orange (Ready Review), Green (Completed).",
+              "Task colors indicate status: Grey (TO DO), Blue (Working), Red (Need Help), Orange (Ready Review), Green (Completed).",
               "Click progress tiles above to filter by status, or use additional filters below."
             ]}
           />

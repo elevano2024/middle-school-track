@@ -9,6 +9,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClipboardList, Edit, Trash2, UserPlus, Users, Search, Filter, FilterX, Calendar, RotateCcw, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -21,11 +31,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
 import { BulkAssignTaskDialog } from '@/components/BulkAssignTaskDialog';
 import TableSkeleton from '@/components/TableSkeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import type { Task } from '@/types/task';
 
 interface TaskFilters {
@@ -42,12 +55,17 @@ export const TasksList = () => {
   const { tasks, loading, isDeleting } = useTasks();
   const { students } = useStudents();
   const { subjects } = useSubjects();
+  const { toast } = useToast();
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [bulkAssigningTask, setBulkAssigningTask] = useState<Task | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Bulk selection state
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState<TaskFilters>({
@@ -173,6 +191,55 @@ export const TasksList = () => {
     filters.dateTo ||
     filters.groupBy !== 'none';
 
+  // Bulk selection handlers
+  const handleSelectTask = (taskId: string, checked: boolean) => {
+    const newSelected = new Set(selectedTasks);
+    if (checked) {
+      newSelected.add(taskId);
+    } else {
+      newSelected.delete(taskId);
+    }
+    setSelectedTasks(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allTaskIds = new Set(filteredTasks.map(task => task.id));
+      setSelectedTasks(allTaskIds);
+    } else {
+      setSelectedTasks(new Set());
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTasks.size === 0) return;
+    
+    try {
+      // Delete all selected tasks
+      const deletePromises = Array.from(selectedTasks).map(taskId => 
+        supabase.from('tasks').delete().eq('id', taskId)
+      );
+      
+      await Promise.all(deletePromises);
+      
+      // Clear selection and close dialog
+      setSelectedTasks(new Set());
+      setShowBulkDeleteConfirm(false);
+      
+      toast({
+        title: "Success",
+        description: `${selectedTasks.size} tasks deleted successfully!`,
+      });
+    } catch (error) {
+      console.error('Error deleting tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete some tasks. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Debug logging for development
   useEffect(() => {
     console.log('=== TASKS LIST UPDATE ===');
@@ -184,6 +251,7 @@ export const TasksList = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
+      todo: { label: 'TO DO', className: 'bg-gray-100 text-gray-800 border-gray-200' },
       working: { label: 'Working', className: 'bg-blue-100 text-blue-800 border-blue-200' },
       'need-help': { label: 'Need Help', className: 'bg-rose-100 text-rose-800 border-rose-200' },
       'ready-review': { label: 'Ready Review', className: 'bg-amber-100 text-amber-800 border-amber-200' },
@@ -226,6 +294,18 @@ export const TasksList = () => {
             </CardTitle>
             
             <div className="flex items-center gap-2">
+              {selectedTasks.size > 0 && (
+                <Button
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  variant="destructive"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Selected ({selectedTasks.size})
+                </Button>
+              )}
+              
               {hasActiveFilters && (
                 <Button
                   onClick={clearFilters}
@@ -464,12 +544,18 @@ export const TasksList = () => {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                          <TableHead className="w-[25%] min-w-[150px] text-blue-900 font-semibold">Activity Name</TableHead>
-                          <TableHead className="w-[20%] min-w-[120px] text-blue-900 font-semibold">Student</TableHead>
-                          <TableHead className="w-[15%] min-w-[100px] text-blue-900 font-semibold">Subject</TableHead>
-                          <TableHead className="w-[12%] min-w-[90px] text-blue-900 font-semibold">Status</TableHead>
-                          <TableHead className="w-[10%] min-w-[80px] text-blue-900 font-semibold">Created</TableHead>
-                          <TableHead className="w-[18%] min-w-[120px] text-right text-blue-900 font-semibold">Actions</TableHead>
+                          <TableHead className="w-[5%] min-w-[50px] text-blue-900 font-semibold">
+                            <Checkbox
+                              checked={selectedTasks.size === groupTasks.length && groupTasks.length > 0}
+                              onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                            />
+                          </TableHead>
+                          <TableHead className="w-[23%] min-w-[150px] text-blue-900 font-semibold">Activity Name</TableHead>
+                          <TableHead className="w-[18%] min-w-[120px] text-blue-900 font-semibold">Student</TableHead>
+                          <TableHead className="w-[14%] min-w-[100px] text-blue-900 font-semibold">Subject</TableHead>
+                          <TableHead className="w-[11%] min-w-[90px] text-blue-900 font-semibold">Status</TableHead>
+                          <TableHead className="w-[9%] min-w-[80px] text-blue-900 font-semibold">Created</TableHead>
+                          <TableHead className="w-[20%] min-w-[120px] text-right text-blue-900 font-semibold">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-blue-100">
@@ -478,7 +564,13 @@ export const TasksList = () => {
                             key={task.id} 
                             className={`hover:bg-blue-50/50 transition-colors ${isDeleting ? 'opacity-50 transition-opacity' : ''}`}
                           >
-                            <TableCell className="font-medium w-[25%]">
+                            <TableCell className="w-[5%]">
+                              <Checkbox
+                                checked={selectedTasks.has(task.id)}
+                                onCheckedChange={(checked) => handleSelectTask(task.id, checked === true)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium w-[23%]">
                               <div className="max-w-[150px]">
                                 <div className="font-medium text-sm truncate text-blue-900" title={task.title}>
                                   {task.title}
@@ -490,7 +582,7 @@ export const TasksList = () => {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="w-[20%]">
+                            <TableCell className="w-[18%]">
                               <div className="text-sm max-w-[120px]">
                                 <div className="truncate text-gray-900" title={getStudentName(task.student_id)}>
                                   {getStudentName(task.student_id)}
@@ -502,15 +594,15 @@ export const TasksList = () => {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="w-[15%]">
+                            <TableCell className="w-[14%]">
                               <span className="text-sm truncate max-w-[100px] block" title={getSubjectName(task.subject_id)}>
                                 {getSubjectName(task.subject_id)}
                               </span>
                             </TableCell>
-                            <TableCell className="w-[12%]">
+                            <TableCell className="w-[11%]">
                               {getStatusBadge(task.status)}
                             </TableCell>
-                            <TableCell className="w-[10%]">
+                            <TableCell className="w-[9%]">
                               <span className="text-xs text-gray-500">
                                 {new Date(task.created_at).toLocaleDateString('en-US', { 
                                   month: 'short', 
@@ -518,7 +610,7 @@ export const TasksList = () => {
                                 })}
                               </span>
                             </TableCell>
-                            <TableCell className="text-right w-[18%]">
+                            <TableCell className="text-right w-[20%]">
                               <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="ghost"
@@ -609,6 +701,31 @@ export const TasksList = () => {
           open={!!bulkAssigningTask}
           onOpenChange={(open) => !open && setBulkAssigningTask(null)}
         />
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {showBulkDeleteConfirm && (
+        <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Selected Tasks</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {selectedTasks.size} selected task{selectedTasks.size !== 1 ? 's' : ''}? 
+                This action cannot be undone and will permanently remove the task{selectedTasks.size !== 1 ? 's' : ''} 
+                from all assigned students.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                Delete {selectedTasks.size} Task{selectedTasks.size !== 1 ? 's' : ''}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

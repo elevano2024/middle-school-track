@@ -23,6 +23,6 @@ export interface Task {
   } | null;
 }
 
-export type TaskStatus = 'working' | 'need-help' | 'ready-review' | 'completed';
+export type TaskStatus = 'todo' | 'working' | 'need-help' | 'ready-review' | 'completed';
 
 export type TeacherFeedbackType = 'thumbs_up' | 'thumbs_down' | 'neutral';

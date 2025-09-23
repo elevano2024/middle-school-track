@@ -61,10 +61,11 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
 
     // Task status breakdown
     const tasksByStatus = {
-      completed: studentTasks.filter(task => task.status === 'completed'),
+      todo: studentTasks.filter(task => task.status === 'todo'),
       working: studentTasks.filter(task => task.status === 'working'),
       needHelp: studentTasks.filter(task => task.status === 'need-help'),
-      readyReview: studentTasks.filter(task => task.status === 'ready-review')
+      readyReview: studentTasks.filter(task => task.status === 'ready-review'),
+      completed: studentTasks.filter(task => task.status === 'completed')
     };
 
     // Subject breakdown
@@ -73,18 +74,19 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
       if (!acc[subjectName]) {
         acc[subjectName] = {
           total: 0,
-          completed: 0,
+          todo: 0,
           working: 0,
           needHelp: 0,
-          readyReview: 0
+          readyReview: 0,
+          completed: 0
         };
       }
       acc[subjectName].total++;
       
       // Map task status to the correct property name
       switch (task.status) {
-        case 'completed':
-          acc[subjectName].completed++;
+        case 'todo':
+          acc[subjectName].todo++;
           break;
         case 'working':
           acc[subjectName].working++;
@@ -94,6 +96,9 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
           break;
         case 'ready-review':
           acc[subjectName].readyReview++;
+          break;
+        case 'completed':
+          acc[subjectName].completed++;
           break;
       }
       

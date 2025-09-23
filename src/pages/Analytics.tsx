@@ -102,10 +102,11 @@ const Analytics = () => {
     // Enhanced student performance metrics with feedback analysis
     const studentMetrics = students.map(student => {
       const studentTasks = tasks.filter(task => task.student_id === student.id);
-      const completedTasks = studentTasks.filter(task => task.status === 'completed');
-      const needHelpTasks = studentTasks.filter(task => task.status === 'need-help');
+      const todoTasks = studentTasks.filter(task => task.status === 'todo');
       const workingTasks = studentTasks.filter(task => task.status === 'working');
+      const needHelpTasks = studentTasks.filter(task => task.status === 'need-help');
       const readyReviewTasks = studentTasks.filter(task => task.status === 'ready-review');
+      const completedTasks = studentTasks.filter(task => task.status === 'completed');
       
       // Feedback analysis
       const tasksWithFeedback = studentTasks.filter(task => task.teacher_feedback_type);
@@ -135,10 +136,11 @@ const Analytics = () => {
         name: student.name,
         grade: student.grade,
         totalTasks: studentTasks.length,
-        completed: completedTasks.length,
-        needHelp: needHelpTasks.length,
+        todo: todoTasks.length,
         working: workingTasks.length,
+        needHelp: needHelpTasks.length,
         readyReview: readyReviewTasks.length,
+        completed: completedTasks.length,
         completionRate,
         feedbackRate,
         positivityScore,

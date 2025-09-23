@@ -18,6 +18,9 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   const getCounts = (): TaskStatusCounts => {
     return tasks.reduce((counts, task) => {
       switch (task.status) {
+        case 'todo':
+          counts.todo++;
+          break;
         case 'working':
           counts.working++;
           break;
@@ -32,7 +35,7 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           break;
       }
       return counts;
-    }, { working: 0, needHelp: 0, readyReview: 0, completed: 0 });
+    }, { todo: 0, working: 0, needHelp: 0, readyReview: 0, completed: 0 });
   };
 
   const counts = getCounts();
@@ -61,6 +64,9 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         
         // Add specific ring colors for each status
         switch (status) {
+          case 'todo':
+            classes += ' ring-gray-400';
+            break;
           case 'working':
             classes += ' ring-blue-400';
             break;
@@ -90,7 +96,21 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         </div>
       )}
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <div 
+          className={getTileStyles(
+            'todo',
+            "text-center p-3 md:p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200/50 shadow-sm"
+          )}
+          onClick={() => handleTileClick('todo')}
+          role={onStatusFilter ? "button" : undefined}
+          tabIndex={onStatusFilter ? 0 : undefined}
+          title={onStatusFilter ? "Filter by TO DO tasks" : undefined}
+        >
+          <div className="text-2xl md:text-3xl font-bold text-gray-700">{counts.todo}</div>
+          <div className="text-xs md:text-sm font-semibold text-gray-600 uppercase tracking-wide mt-1">TO DO</div>
+        </div>
+
         <div 
           className={getTileStyles(
             'working',

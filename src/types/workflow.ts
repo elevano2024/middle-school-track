@@ -1,4 +1,4 @@
-export type TaskStatus = 'working' | 'need-help' | 'ready-review' | 'completed';
+export type TaskStatus = 'todo' | 'working' | 'need-help' | 'ready-review' | 'completed';
 
 export interface Student {
   id: string;
@@ -25,6 +25,7 @@ export interface Task {
 }
 
 export interface TaskStatusCounts {
+  todo: number;
   working: number;
   needHelp: number;
   readyReview: number;

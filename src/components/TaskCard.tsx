@@ -60,6 +60,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
 
   const getStatusConfig = (status: TaskStatus) => {
     switch (status) {
+      case 'todo':
+        return {
+          color: 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 text-gray-800',
+          label: 'TO DO',
+          dotColor: 'bg-gray-500',
+          ring: 'hover:ring-gray-300'
+        };
       case 'working':
         return {
           color: 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-800',
@@ -115,13 +122,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   };
 
   const getStatusOptions = (): TaskStatus[] => {
-    // Students can only change to working, need-help, or ready-review
+    // Students can change to todo, working, need-help, or ready-review
     // Only teachers and admins can mark tasks as completed
     if (isStudent) {
-      return ['working', 'need-help', 'ready-review'];
+      return ['todo', 'working', 'need-help', 'ready-review'];
     }
     // Teachers and admins can access all status options
-    return ['working', 'need-help', 'ready-review', 'completed'];
+    return ['todo', 'working', 'need-help', 'ready-review', 'completed'];
   };
 
   const handleIconClick = (e: React.MouseEvent) => {

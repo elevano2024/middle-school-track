@@ -61,6 +61,7 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   // Get the display text for the current filter
   const getFilterDisplayText = () => {
     switch (statusFilter) {
+      case 'todo': return 'TO DO';
       case 'working': return 'Working';
       case 'need-help': return 'Need Help';
       case 'ready-review': return 'Ready for Review';
