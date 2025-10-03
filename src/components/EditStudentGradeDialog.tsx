@@ -20,7 +20,7 @@ interface EditStudentGradeDialogProps {
   onSuccess?: () => void;
 }
 
-const GRADE_LEVELS = ['7', '8', '9', '10', '11', '12'] as const;
+const GRADE_LEVELS = ['6', '7', '8', '9', '10', '11', '12'] as const;
 
 const EditStudentGradeDialog: React.FC<EditStudentGradeDialogProps> = ({
   student,
@@ -53,7 +53,7 @@ const EditStudentGradeDialog: React.FC<EditStudentGradeDialogProps> = ({
       const { error } = await supabase
         .from('students')
         .update({ 
-          grade: selectedGrade as '7' | '8' | '9' | '10' | '11' | '12',
+          grade: selectedGrade as '6' | '7' | '8' | '9' | '10' | '11' | '12',
           updated_at: new Date().toISOString()
         })
         .eq('id', student.id);

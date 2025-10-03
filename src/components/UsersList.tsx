@@ -63,7 +63,12 @@ export const UsersList: React.FC<UsersListProps> = ({
         .from('students')
         .select('id, grade');
       
-      if (data && !error) {
+      if (error) {
+        console.error('Error fetching student grades:', error);
+        return;
+      }
+      
+      if (data) {
         const gradesMap = data.reduce((acc, student) => {
           acc[student.id] = student.grade;
           return acc;
@@ -73,7 +78,7 @@ export const UsersList: React.FC<UsersListProps> = ({
     };
     
     fetchStudentGrades();
-  }, []);
+  }, [profiles]); // Re-fetch when profiles change
 
   // Filter users based on search and role filter
   const filteredProfiles = useMemo(() => {
