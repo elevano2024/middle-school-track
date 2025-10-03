@@ -191,7 +191,7 @@ export const useUserManagement = () => {
   const resetUserPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth'
+        redirectTo: window.location.origin + '/auth?mode=reset'
       });
 
       if (error) {

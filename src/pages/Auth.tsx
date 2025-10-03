@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Quote } from 'lucide-react';
+import { Quote, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Auth = () => {
@@ -14,14 +14,21 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [searchParams] = useSearchParams();
+  const { signIn, signUp, user, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
 
+  const isResetMode = searchParams.get('mode') === 'reset';
+
   useEffect(() => {
-    if (user) {
+    if (user && !isResetMode) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, isResetMode]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +56,50 @@ const Auth = () => {
       toast.error(error.message);
     } else {
       toast.success('Account created successfully! Please check your email to verify your account.');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const { error } = await resetPassword(resetEmail);
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password reset email sent! Please check your inbox.');
+      setShowForgotPassword(false);
+      setResetEmail('');
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    const { error } = await updatePassword(newPassword);
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password updated successfully! You can now sign in.');
+      navigate('/auth');
     }
     
     setIsLoading(false);
@@ -124,40 +175,76 @@ const Auth = () => {
           {/* Login Form */}
           <Card className="shadow-lg border border-gray-100">
             <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-2xl text-center text-gray-900">Welcome Back</CardTitle>
+              <CardTitle className="text-2xl text-center text-gray-900">
+                {isResetMode ? 'Reset Password' : showForgotPassword ? 'Forgot Password' : 'Welcome Back'}
+              </CardTitle>
               <CardDescription className="text-center text-gray-600">
-                Sign in to access your dashboard
+                {isResetMode 
+                  ? 'Enter your new password below' 
+                  : showForgotPassword 
+                    ? 'Enter your email to receive a password reset link' 
+                    : 'Sign in to access your dashboard'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Tabs defaultValue="signin" className="w-full">
-                {/* <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
-                  <TabsTrigger value="signin" className="data-[state=active]:bg-white">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup" className="data-[state=active]:bg-white">Sign Up</TabsTrigger>
-                </TabsList> */}
-                
-                <TabsContent value="signin">
-                  <form onSubmit={handleSignIn} className="space-y-5">
+              {isResetMode ? (
+                // Password Reset Form
+                <form onSubmit={handleUpdatePassword} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password" className="text-sm font-medium text-gray-700">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password" className="text-sm font-medium text-gray-700">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Updating Password...' : 'Update Password'}
+                  </Button>
+                </form>
+              ) : showForgotPassword ? (
+                // Forgot Password Form
+                <div className="space-y-5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="mb-2 text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Sign In
+                  </Button>
+                  <form onSubmit={handleForgotPassword} className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="signin-email" className="text-sm font-medium text-gray-700">Email</Label>
+                      <Label htmlFor="reset-email" className="text-sm font-medium text-gray-700">Email</Label>
                       <Input
-                        id="signin-email"
+                        id="reset-email"
                         type="email"
                         placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-password" className="text-sm font-medium text-gray-700">Password</Label>
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
                         className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                         required
                       />
@@ -167,10 +254,62 @@ const Auth = () => {
                       className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium" 
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Signing in...' : 'Sign In'}
+                      {isLoading ? 'Sending...' : 'Send Reset Link'}
                     </Button>
                   </form>
-                </TabsContent>
+                </div>
+              ) : (
+                // Sign In/Sign Up Tabs
+                <Tabs defaultValue="signin" className="w-full">
+                  {/* <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
+                    <TabsTrigger value="signin" className="data-[state=active]:bg-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-white">Sign Up</TabsTrigger>
+                  </TabsList> */}
+                  
+                  <TabsContent value="signin">
+                    <form onSubmit={handleSignIn} className="space-y-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-email" className="text-sm font-medium text-gray-700">Email</Label>
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="signin-password" className="text-sm font-medium text-gray-700">Password</Label>
+                          <button
+                            type="button"
+                            onClick={() => setShowForgotPassword(true)}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                        <Input
+                          id="signin-password"
+                          type="password"
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium" 
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Signing in...' : 'Sign In'}
+                      </Button>
+                    </form>
+                  </TabsContent>
                 
                 <TabsContent value="signup">
                   <form onSubmit={handleSignUp} className="space-y-5">
@@ -220,10 +359,13 @@ const Auth = () => {
                   </form>
                 </TabsContent>
               </Tabs>
+              )}
 
-              <div className="text-center text-sm text-gray-500 border-t pt-6">
-                Need help? Contact your administrator
-              </div>
+              {!isResetMode && (
+                <div className="text-center text-sm text-gray-500 border-t pt-6">
+                  Need help? Contact your administrator
+                </div>
+              )}
             </CardContent>
           </Card>
 
