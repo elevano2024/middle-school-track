@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { AlertTriangle, Search, Users, UserPlus, UserMinus, MoreVertical, Mail, Trash2 } from 'lucide-react';
+import EditStudentGradeDialog from '@/components/EditStudentGradeDialog';
+import { AlertTriangle, Search, Users, UserPlus, UserMinus, MoreVertical, Mail, Trash2, GraduationCap } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -17,6 +18,7 @@ import {
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
@@ -48,9 +50,30 @@ export const UsersList: React.FC<UsersListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'teacher' | 'student' | 'no-role'>('all');
   const [processingUserId, setProcessingUserId] = useState<string | null>(null);
+  const [editingStudent, setEditingStudent] = useState<{ id: string; name: string; grade: string } | null>(null);
+  const [studentGrades, setStudentGrades] = useState<Record<string, string>>({});
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Fetch student grades from the students table
+  useEffect(() => {
+    const fetchStudentGrades = async () => {
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, grade');
+      
+      if (data && !error) {
+        const gradesMap = data.reduce((acc, student) => {
+          acc[student.id] = student.grade;
+          return acc;
+        }, {} as Record<string, string>);
+        setStudentGrades(gradesMap);
+      }
+    };
+    
+    fetchStudentGrades();
+  }, []);
 
   // Filter users based on search and role filter
   const filteredProfiles = useMemo(() => {
@@ -270,19 +293,41 @@ export const UsersList: React.FC<UsersListProps> = ({
   }
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-900">
-          <Users className="w-5 h-5 text-blue-600" />
-          Users ({filteredProfiles.length})
-          {filteredProfiles.length !== profiles.length && (
-            <span className="text-sm font-normal text-blue-600">
-              of {profiles.length} total
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <>
+      {/* Edit Grade Dialog */}
+      <EditStudentGradeDialog
+        student={editingStudent}
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        onSuccess={async () => {
+          setEditingStudent(null);
+          // Refresh student grades
+          const { data } = await supabase
+            .from('students')
+            .select('id, grade');
+          if (data) {
+            const gradesMap = data.reduce((acc, student) => {
+              acc[student.id] = student.grade;
+              return acc;
+            }, {} as Record<string, string>);
+            setStudentGrades(gradesMap);
+          }
+        }}
+      />
+
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-blue-100">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-900">
+            <Users className="w-5 h-5 text-blue-600" />
+            Users ({filteredProfiles.length})
+            {filteredProfiles.length !== profiles.length && (
+              <span className="text-sm font-normal text-blue-600">
+                of {profiles.length} total
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
@@ -432,6 +477,20 @@ export const UsersList: React.FC<UsersListProps> = ({
                             </DropdownMenuItem>
                           )}
 
+                          {/* Edit Grade - Only for users with student role */}
+                          {profile.user_roles?.some(r => r.role === 'student') && studentGrades[profile.id] && (
+                            <DropdownMenuItem 
+                              onClick={() => setEditingStudent({
+                                id: profile.id,
+                                name: profile.full_name,
+                                grade: studentGrades[profile.id]
+                              })}
+                            >
+                              <GraduationCap className="w-4 h-4 mr-2" />
+                              Edit Grade
+                            </DropdownMenuItem>
+                          )}
+
                           {/* Delete User - Only for admins and not current user */}
                           {isAdmin && onDeleteUser && user?.id !== profile.id && (
                             <>
@@ -456,5 +515,6 @@ export const UsersList: React.FC<UsersListProps> = ({
         )}
       </CardContent>
     </Card>
+    </>
   );
 };
