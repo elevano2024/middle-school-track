@@ -216,7 +216,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "teacher" | "student"
-      grade_level: "7" | "8" | "9" | "10" | "11" | "12"
+      grade_level: "6" | "7" | "8" | "9" | "10" | "11" | "12"
       task_status: "todo" | "working" | "need-help" | "ready-review" | "completed"
     }
     CompositeTypes: {
@@ -334,7 +334,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "teacher", "student"],
-      grade_level: ["7", "8", "9", "10", "11", "12"],
+      grade_level: ["6", "7", "8", "9", "10", "11", "12"],
       task_status: ["todo", "working", "need-help", "ready-review", "completed"],
     },
   },
