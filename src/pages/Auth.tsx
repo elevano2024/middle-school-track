@@ -23,12 +23,27 @@ const Auth = () => {
   const navigate = useNavigate();
 
   const isResetMode = searchParams.get('mode') === 'reset';
+  const errorCode = searchParams.get('error_code');
+  const errorDescription = searchParams.get('error_description');
 
   useEffect(() => {
     if (user && !isResetMode) {
       navigate('/');
     }
   }, [user, navigate, isResetMode]);
+
+  // Handle password reset errors (expired/invalid links)
+  useEffect(() => {
+    if (errorCode === 'otp_expired') {
+      toast.error('Password reset link has expired. Please request a new one.');
+      setShowForgotPassword(true);
+      // Clean up URL
+      navigate('/auth', { replace: true });
+    } else if (errorCode) {
+      toast.error(errorDescription || 'An error occurred. Please try again.');
+      navigate('/auth', { replace: true });
+    }
+  }, [errorCode, errorDescription, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
