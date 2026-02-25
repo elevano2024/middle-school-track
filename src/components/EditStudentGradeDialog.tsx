@@ -50,19 +50,33 @@ const EditStudentGradeDialog: React.FC<EditStudentGradeDialogProps> = ({
 
     setIsUpdating(true);
     try {
-      const { error } = await supabase
+      // Use .select() so we can verify rows were actually updated.
+      // If RLS silently blocks the update, data will be an empty array
+      // but error will be null — so we must check data.length.
+      const { error, data } = await supabase
         .from('students')
         .update({ 
           grade: selectedGrade as '6' | '7' | '8' | '9' | '10' | '11' | '12',
           updated_at: new Date().toISOString()
         })
-        .eq('id', student.id);
+        .eq('id', student.id)
+        .select();
 
       if (error) {
         console.error('Error updating student grade:', error);
         toast({
           title: "Failed to Update Grade",
           description: error.message || "There was an error updating the grade. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.error('Grade update returned 0 rows — student row may not exist or RLS blocked the update.');
+        toast({
+          title: "Grade Not Updated",
+          description: "The grade could not be saved. The student record may be missing or you may not have permission. Please try syncing student records first.",
           variant: "destructive"
         });
         return;

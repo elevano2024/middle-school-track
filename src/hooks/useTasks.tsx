@@ -46,48 +46,54 @@ export const useTasks = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 
-  // Optimistic delete mutation
+  // Optimistic delete mutation — deletes ALL tasks sharing the same title + subject
+  // so that removing one assignment removes it from every assigned student.
   const deleteTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      const { error } = await supabase
+    mutationFn: async (task: Pick<Task, 'title' | 'subject_id'>) => {
+      const { error, count } = await supabase
         .from('tasks')
-        .delete()
-        .eq('id', taskId);
-      
+        .delete({ count: 'exact' })
+        .eq('title', task.title)
+        .eq('subject_id', task.subject_id);
+
       if (error) throw error;
-      return taskId;
+      return { title: task.title, subjectId: task.subject_id, deletedCount: count ?? 0 };
     },
-    onMutate: async (taskId: string) => {
+    onMutate: async (task: Pick<Task, 'title' | 'subject_id'>) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['tasks'] });
-      
-      // Snapshot the previous value
+
+      // Snapshot the previous value for rollback
       const previousTasks = queryClient.getQueryData<Task[]>(['tasks', user?.id, isAdmin, isTeacher, isStudent]);
-      
-      // Optimistically update the cache
+
+      // Optimistically remove ALL tasks with matching title + subject
       queryClient.setQueryData<Task[]>(
         ['tasks', user?.id, isAdmin, isTeacher, isStudent],
-        (oldTasks) => oldTasks?.filter(task => task.id !== taskId) || []
+        (oldTasks) =>
+          oldTasks?.filter(
+            (t) => !(t.title === task.title && t.subject_id === task.subject_id)
+          ) || []
       );
-      
+
       return { previousTasks };
     },
-    onError: (error, taskId, context) => {
+    onError: (error, _task, context) => {
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(['tasks', user?.id, isAdmin, isTeacher, isStudent], context.previousTasks);
       }
-      console.error('Error deleting task:', error);
+      console.error('Error deleting tasks:', error);
       toast({
         title: "Error",
-        description: "Failed to delete task. Please try again.",
+        description: "Failed to delete tasks. Please try again.",
         variant: "destructive",
       });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const label = result.deletedCount === 1 ? 'task' : 'tasks';
       toast({
-        title: "Success", 
-        description: "Task deleted successfully!",
+        title: "Success",
+        description: `${result.deletedCount} ${label} deleted successfully!`,
       });
     },
     onSettled: () => {

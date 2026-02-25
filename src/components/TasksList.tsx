@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from '@/hooks/useTasks';
 import { useStudents } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
@@ -52,6 +53,7 @@ interface TaskFilters {
 }
 
 export const TasksList = () => {
+  const queryClient = useQueryClient();
   const { tasks, loading, isDeleting } = useTasks();
   const { students } = useStudents();
   const { subjects } = useSubjects();
@@ -213,22 +215,26 @@ export const TasksList = () => {
 
   const handleBulkDelete = async () => {
     if (selectedTasks.size === 0) return;
-    
+
+    const count = selectedTasks.size;
+
     try {
-      // Delete all selected tasks
-      const deletePromises = Array.from(selectedTasks).map(taskId => 
-        supabase.from('tasks').delete().eq('id', taskId)
-      );
-      
-      await Promise.all(deletePromises);
-      
+      // Delete every selected task by ID
+      const idsToDelete = Array.from(selectedTasks);
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (error) throw error;
+
       // Clear selection and close dialog
       setSelectedTasks(new Set());
       setShowBulkDeleteConfirm(false);
-      
+
       toast({
         title: "Success",
-        description: `${selectedTasks.size} tasks deleted successfully!`,
+        description: `${count} ${count === 1 ? 'task' : 'tasks'} deleted successfully!`,
       });
     } catch (error) {
       console.error('Error deleting tasks:', error);
@@ -237,6 +243,10 @@ export const TasksList = () => {
         description: "Failed to delete some tasks. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      // Always invalidate the cache so the UI refreshes
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
     }
   };
 
