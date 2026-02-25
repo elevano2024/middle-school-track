@@ -4,6 +4,7 @@ import { Task as WorkflowTask, TaskStatus } from '../types/workflow';
 import { Task as ApiTask } from '@/types/task';
 import { useUserRole } from '@/hooks/useUserRole';
 import { usePresentationMode } from '@/contexts/PresentationContext';
+import { useTasks } from '@/hooks/useTasks';
 import { EditTaskDialog } from '@/components/EditTaskDialog';
 import { DeleteTaskDialog } from '@/components/DeleteTaskDialog';
 import { AssignTaskDialog } from '@/components/AssignTaskDialog';
@@ -30,18 +31,25 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
   
   const { isAdmin, isTeacher, isStudent } = useUserRole();
   const { isPresentationMode } = usePresentationMode();
+  const { tasks: allTasks } = useTasks();
   
   // Only teachers and admins can manage tasks
   const canManageTasks = isAdmin || isTeacher;
 
-  // Convert WorkflowTask to ApiTask format for dialogs
+  // Convert WorkflowTask to ApiTask format for dialogs.
+  // Looks up the real subject_id from the full tasks list so that
+  // group-delete (by title + subject_id) works correctly.
   const convertTaskForDialog = (workflowTask: WorkflowTask): ApiTask => {
+    // Try to find the canonical task row from the API to get subject_id
+    const canonicalTask = allTasks.find((t) => t.id === workflowTask.id);
+    const subjectId = canonicalTask?.subject_id ?? '';
+
     return {
       id: workflowTask.id,
       title: workflowTask.title,
       description: workflowTask.description || null,
       student_id: workflowTask.studentId,
-      subject_id: '', // We don't have this in WorkflowTask, dialogs will need to handle this
+      subject_id: subjectId,
       status: workflowTask.status,
       time_in_status: workflowTask.timeInStatus || null,
       created_at: workflowTask.createdAt || new Date().toISOString(),

@@ -594,7 +594,6 @@ const Index = () => {
         onUpdateTaskStatus={handleUpdateTaskStatus}
         getTasksForStudent={getTasksForStudent}
         statusFilter={statusFilter}
-        onRefresh={refetchStudents}
       />
     </div>
   );

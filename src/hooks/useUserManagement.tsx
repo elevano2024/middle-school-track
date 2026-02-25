@@ -235,6 +235,28 @@ export const useUserManagement = () => {
         return false;
       }
 
+      // The edge function creates the auth user and assigns the 'student' role
+      // but does NOT insert a row into the students table. We need to do that
+      // here so the student shows up in grade lists and task assignment forms.
+      if (data?.data?.user?.id) {
+        const newUserId = data.data.user.id;
+        const { error: studentError } = await supabase
+          .from('students')
+          .upsert({
+            id: newUserId,
+            name: fullName || 'Unknown Name',
+            grade: '7' as const, // Default grade — teacher can change later
+          })
+          .select();
+
+        if (studentError) {
+          console.error('Warning: student record not created:', studentError);
+          // Non-fatal — syncStudentRecords can fix this later
+        } else {
+          console.log('Student record created for new user:', newUserId);
+        }
+      }
+
       // Check if role assignment was successful
       if (data?.role) {
         toast.success(`User created successfully with ${data.role} access!`);
@@ -281,7 +303,7 @@ export const useUserManagement = () => {
 
       // Get profiles for these users
       const userIds = studentRoles.map(role => role.user_id);
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', userIds);
@@ -292,12 +314,23 @@ export const useUserManagement = () => {
         return false;
       }
 
-      // Create student records for each user
-      const studentRecords = profiles?.map(profile => ({
+      // Fetch existing student records so we can preserve their current grades.
+      // Without this, upsert would overwrite every grade back to the default '7'.
+      const { data: existingStudents } = await supabase
+        .from('students')
+        .select('id, grade');
+
+      const existingGrades = new Map<string, string>(
+        existingStudents?.map((s) => [s.id, s.grade]) ?? []
+      );
+
+      // Build student records, keeping the existing grade for students that
+      // already have one and defaulting to '7' only for brand-new records.
+      const studentRecords = (profilesData ?? []).map((profile) => ({
         id: profile.id,
         name: profile.full_name || 'Unknown Name',
-        grade: '7' as const, // Default grade with proper typing
-      })) || [];
+        grade: (existingGrades.get(profile.id) || '7') as '6' | '7' | '8' | '9' | '10' | '11' | '12',
+      }));
 
       if (studentRecords.length > 0) {
         const { error: syncError } = await supabase
