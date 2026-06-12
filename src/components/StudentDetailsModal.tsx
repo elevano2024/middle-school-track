@@ -39,6 +39,15 @@ interface StudentDetailsModalProps {
   onClose: () => void;
 }
 
+interface SubjectBreakdown {
+  total: number;
+  todo: number;
+  working: number;
+  needHelp: number;
+  readyReview: number;
+  completed: number;
+}
+
 const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
   student,
   isOpen,
@@ -103,7 +112,7 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
       }
       
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, SubjectBreakdown>);
 
     // Attendance calculations
     const totalAttendanceDays = studentAttendance.length;
@@ -130,7 +139,6 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
       presentDays,
       recentTasks: recentTasks.length,
       completionRate,
-      averageGrade: 'A-', // Placeholder - you can calculate from actual grades
       subjectCount: Object.keys(tasksBySubject).length
     };
   }, [student, tasks, attendance]);
@@ -204,7 +212,7 @@ const StudentDetailsModal: React.FC<StudentDetailsModalProps> = ({
             <div class="section-title">Performance by Subject</div>
             <table>
               <tr><th>Subject</th><th>Total Tasks</th><th>Completed</th><th>Completion Rate</th></tr>
-              ${Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]: [string, any]) => 
+              ${Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]) => 
                 `<tr><td>${subject}</td><td>${data.total}</td><td>${data.completed}</td><td>${Math.round((data.completed / data.total) * 100) || 0}%</td></tr>`
               ).join('')}
             </table>
@@ -320,7 +328,7 @@ Please find below the progress report for ${student.name}:
 • Ready for Review: ${studentAnalytics.tasksByStatus.readyReview.length}
 
 📚 SUBJECT PERFORMANCE:
-${Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]: [string, any]) => 
+${Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]) => 
   `• ${subject}: ${data.completed}/${data.total} completed (${Math.round((data.completed / data.total) * 100) || 0}%)`
 ).join('\n')}
 
@@ -467,7 +475,7 @@ The Teaching Team
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]: [string, any]) => {
+                {Object.entries(studentAnalytics.tasksBySubject).map(([subject, data]) => {
                   const completionRate = Math.round((data.completed / data.total) * 100) || 0;
                   return (
                     <div key={subject} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

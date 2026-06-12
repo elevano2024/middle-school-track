@@ -1,8 +1,10 @@
 import React from 'react';
-import { Home, Users, LogOut, Settings, UserCheck, ChevronLeft, ChevronRight, BarChart3, HelpCircle } from 'lucide-react';
+import { Home, Users, LogOut, Settings, UserCheck, ChevronLeft, ChevronRight, BarChart3, HelpCircle, ClipboardCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useTasks } from '@/hooks/useTasks';
+import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 const items = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Attendance', url: '/attendance', icon: UserCheck, teacherOnly: true },
+  { title: 'Review Queue', url: '/review', icon: ClipboardCheck, teacherOnly: true, badgeKey: 'readyReview' },
   { title: 'Manage Tasks', url: '/settings', icon: Settings, teacherOnly: true },
   { title: 'Analytics', url: '/analytics', icon: BarChart3, adminOnly: true },
   { title: 'User Management', url: '/users', icon: Users, adminOnly: true },
@@ -29,9 +32,11 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const { signOut, user } = useAuth();
   const { isAdmin, isTeacher } = useUserRole();
+  const { tasks } = useTasks();
 
   const isCollapsed = state === 'collapsed';
   const { toggleSidebar } = useSidebar();
+  const readyReviewCount = tasks.filter(task => task.status === 'ready-review').length;
 
   const handleSignOut = async () => {
     await signOut();
@@ -113,6 +118,11 @@ export function AppSidebar() {
                   >
                     <item.icon className={`${isCollapsed ? 'h-4 w-4' : 'h-4 w-4'} flex-shrink-0`} />
                     {!isCollapsed && <span className="truncate">{item.title}</span>}
+                    {!isCollapsed && item.badgeKey === 'readyReview' && readyReviewCount > 0 && (
+                      <Badge className="ml-auto bg-amber-100 text-amber-800 hover:bg-amber-100">
+                        {readyReviewCount}
+                      </Badge>
+                    )}
                   </NavLink>
                 </SidebarMenuItem>
               ))}

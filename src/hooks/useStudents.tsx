@@ -7,6 +7,8 @@ export interface Student {
   id: string;
   name: string;
   grade: string;
+  // Present on the students table and returned by select('*')
+  email?: string | null;
   created_at: string;
   updated_at: string;
 }

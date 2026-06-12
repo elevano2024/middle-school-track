@@ -14,6 +14,7 @@ import {
   Settings, 
   UserPlus, 
   CheckCircle, 
+  ClipboardCheck,
   Eye, 
   Filter, 
   Download, 
@@ -32,7 +33,7 @@ import {
 const Help = () => {
   const { isAdmin, isTeacher, isStudent } = useUserRole();
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started', 'review-queue']));
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const toggleSection = (sectionId: string) => {
@@ -63,17 +64,17 @@ const Help = () => {
         {
           title: 'First Login & Navigation',
           content: [
-            '1. Log in with your teacher or admin credentials',
-            '2. You\'ll land on the Dashboard (FleetBoard) showing all student progress',
-            '3. Use the sidebar to navigate between different sections',
-            '4. Check the header for your check-in status and user menu'
+            '1. Log in with your teacher or admin credentials.',
+            '2. You\'ll land on the Dashboard (FleetBoard) showing all student progress.',
+            '3. Use the sidebar to navigate between Dashboard, Attendance, Review Queue, Manage Tasks, Analytics, and Help.',
+            '4. Watch the Review Queue badge to see how many submitted activities are waiting for review.'
           ]
         },
         {
           title: 'User Interface Overview',
           content: [
             '• **Sidebar**: Main navigation menu with all available features',
-            '• **Header**: Shows current page, check-in button, and user profile',
+            '• **Review Queue Badge**: Shows how many activities are currently waiting for teacher review',
             '• **Main Content**: Displays the selected page content',
             '• **Notifications**: Toast messages appear for important updates'
           ]
@@ -121,6 +122,51 @@ const Help = () => {
             'No need to refresh - changes appear instantly across all connected devices.',
             'Perfect for classroom TV displays and teacher monitoring.'
           ]
+        },
+        {
+          title: 'Students Need Attention',
+          content: [
+            'The dashboard highlights students who may need follow-up based on task age.',
+            'Need Help tasks are flagged when they have been waiting for help for more than 30 minutes.',
+            'Ready Review tasks are flagged when they have been waiting for review for more than a week.',
+            'Use these alerts to decide whether to help a student, review their work, or send the task back for revisions.'
+          ]
+        }
+      ]
+    },
+    {
+      id: 'review-queue',
+      title: 'Review Queue',
+      icon: ClipboardCheck,
+      category: 'core',
+      roles: ['teacher', 'admin'],
+      isNew: true,
+      sections: [
+        {
+          title: 'What the Review Queue Is For',
+          content: [
+            'The Review Queue shows all learning activities that students have marked as Ready Review.',
+            'It is the main place for teachers to clear submitted work, provide feedback, and move tasks to Completed.',
+            'The number badge in the sidebar shows how many activities are waiting for review.'
+          ]
+        },
+        {
+          title: 'Review Actions',
+          content: [
+            '• **Send Back**: Moves the activity back to Working when the student needs to revise or continue.',
+            '• **Mark Complete**: Approves the activity without adding written feedback.',
+            '• **Complete + Feedback**: Opens the feedback dialog and saves feedback while marking the task Completed in one step.'
+          ]
+        },
+        {
+          title: 'Recommended Review Workflow',
+          content: [
+            '1. Open Review Queue at the start or end of each work cycle.',
+            '2. Start with the oldest submissions first so work does not sit unreviewed.',
+            '3. Use Complete + Feedback when students need encouragement or next steps.',
+            '4. Use Send Back when a task is not ready to complete yet.',
+            '5. After review, check Analytics to see updated completion and feedback metrics.'
+          ]
         }
       ]
     },
@@ -134,21 +180,22 @@ const Help = () => {
         {
           title: 'Creating New Tasks',
           content: [
-            '1. Navigate to "Manage Tasks" in the sidebar',
-            '2. Fill in the task details: title, description, subject',
-            '3. Select which students should receive the task',
-            '4. Set any due dates or special instructions',
-            '5. Click "Create Task" to assign it to selected students'
+            '1. Navigate to "Manage Tasks" in the sidebar.',
+            '2. Fill in the activity name, learning objectives or notes, and subject area.',
+            '3. Select which students should receive the activity.',
+            '4. Click "Create Task" to assign it to selected students.',
+            '5. Created activities begin in TO DO and appear on each student\'s dashboard.'
           ]
         },
         {
           title: 'Task Status Workflow',
           content: [
             'Tasks follow a standard workflow that students can update:',
-            '1. **Working**: Student is actively working on the task',
-            '2. **Need Help**: Student is stuck and requires assistance',
-            '3. **Ready Review**: Student has completed work and wants review',
-            '4. **Completed**: Teacher has reviewed and approved the work'
+            '1. **TO DO**: Activity has been assigned but not started.',
+            '2. **Working**: Student is actively working on the task.',
+            '3. **Need Help**: Student is stuck and requires assistance.',
+            '4. **Ready Review**: Student has submitted work for teacher review.',
+            '5. **Completed**: Teacher has reviewed and approved the work.'
           ]
         },
         {
@@ -156,6 +203,7 @@ const Help = () => {
           content: [
             'Use the dashboard to see real-time status updates from students.',
             'Students can change their status independently to communicate their needs.',
+            'Use the Review Queue for work that is Ready Review.',
             'Teachers can update task status during review or when providing help.'
           ]
         },
@@ -163,8 +211,8 @@ const Help = () => {
           title: 'Editing and Managing Tasks',
           content: [
             'Click on any task card to edit details or update status.',
-            'You can modify task descriptions, due dates, and assignments.',
-            'Delete tasks that are no longer needed from the task management area.'
+            'Use Manage Tasks to edit, reassign, bulk assign, or delete learning activities.',
+            'When deleting one instance of a learning activity, matching activities with the same title and subject are removed from all assigned students.'
           ]
         }
       ]
@@ -198,9 +246,9 @@ const Help = () => {
           title: 'Attendance Analytics',
           content: [
             'View attendance rates and trends in the Analytics section.',
-            'Track which students have perfect attendance.',
-            'Monitor overall class attendance percentages.',
-            'Generate attendance reports for administration.'
+            'Use Attendance Insights to see monthly attendance trends and per-student attendance rates.',
+            'Students below 90% attendance are flagged for follow-up.',
+            'Export attendance insights as CSV or print them for administration.'
           ]
         }
       ]
@@ -216,8 +264,20 @@ const Help = () => {
           title: 'Dashboard Overview',
           content: [
             'The Analytics page provides comprehensive insights into student progress.',
-            'View key metrics: total students, attendance rates, task completion, students needing help.',
-            'Monitor both individual student performance and class-wide trends.'
+            'View key metrics: total students, attendance rates, task completion, students needing help, and feedback activity.',
+            'Monitor both individual student performance and class-wide trends.',
+            'Attendance Insights shows historical attendance patterns beyond today.'
+          ]
+        },
+        {
+          title: 'Attendance Insights',
+          isNew: true,
+          content: [
+            'Use the Attendance Insights section to review historical attendance, not just today\'s check-ins.',
+            'Set a start and end date to focus on a specific time period.',
+            'Review monthly attendance trends and the per-student attendance table.',
+            'Students below 90% attendance are flagged so administrators can follow up.',
+            'Use CSV export for spreadsheets or Print for a quick report.'
           ]
         },
         {
@@ -242,10 +302,11 @@ const Help = () => {
         {
           title: 'Understanding Metrics',
           content: [
-            '• **Completion Rate**: Percentage of assigned tasks completed',
-            '• **Attendance Rate**: Percentage of school days student was present',
+            '• **Completion Rate**: Percentage of assigned tasks completed after teacher review',
+            '• **Attendance Rate**: Percentage of tracked attendance records marked present',
             '• **Task Breakdown**: Distribution across different status categories',
-            '• **Subject Performance**: Progress tracking by academic subject'
+            '• **Subject Performance**: Progress tracking by academic subject',
+            '• **Feedback Response Time**: Shows "No data yet" until feedback exists'
           ]
         }
       ]
@@ -288,8 +349,9 @@ const Help = () => {
           title: 'Password Management',
           content: [
             'Reset user passwords using the password reset form.',
-            'Enter the user\'s email address to generate a new temporary password.',
-            'Users should change their password on first login after reset.'
+            'Enter the user\'s email address to send a secure reset link.',
+            'If reset email delivery is unavailable, an administrator can set a temporary password through Supabase admin tools.',
+            'Users should change temporary passwords after logging in.'
           ]
         }
       ]
@@ -365,9 +427,10 @@ const Help = () => {
           title: 'Classroom Management Tips',
           content: [
             '• Check the dashboard regularly to identify students needing help',
+            '• Use the Review Queue daily so Ready Review work does not pile up',
             '• Use status filters to focus on specific classroom needs',
             '• Encourage students to update their status honestly',
-            '• Review completed work promptly to maintain student engagement'
+            '• Provide feedback promptly to maintain student engagement'
           ]
         },
         {
@@ -469,195 +532,202 @@ const Help = () => {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <HelpCircle className="h-8 w-8 text-blue-600" />
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-            Help & User Guide
-          </h1>
-          <p className="text-gray-600">
-            Complete guide to using the Student Progress Tracking System
-            {isAdmin && ' (Administrator View)'}
-            {isTeacher && !isAdmin && ' (Teacher View)'}
-          </p>
+    <div className="min-h-full space-y-6 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 p-6">
+      {/* Hero */}
+      <div className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+              <HelpCircle className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white sm:text-3xl">Help &amp; User Guide</h1>
+              <p className="mt-1 text-blue-100">
+                Everything you need to run ARCC
+                {isAdmin ? ' as an administrator.' : isTeacher ? ' as a teacher.' : '.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick start steps */}
+        <div className="grid gap-4 p-6 md:grid-cols-2">
+          {(isTeacher || isAdmin) && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
+                <Target className="h-4 w-4 text-blue-600" /> Teachers — first steps
+              </h3>
+              <ol className="space-y-2.5 text-sm text-slate-700">
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">1</span>
+                  <span><span className="font-medium text-slate-900">Dashboard</span> — watch live student progress.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">2</span>
+                  <span><span className="font-medium text-slate-900">Manage Tasks</span> — create and assign activities.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">3</span>
+                  <span><span className="font-medium text-slate-900">Review Queue</span> — clear submitted work and give feedback.</span>
+                </li>
+              </ol>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
+                <Shield className="h-4 w-4 text-indigo-600" /> Administrators — setup
+              </h3>
+              <ol className="space-y-2.5 text-sm text-slate-700">
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">1</span>
+                  <span><span className="font-medium text-slate-900">User Management</span> — create teachers and students.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">2</span>
+                  <span><span className="font-medium text-slate-900">Sync Records</span> — fix data consistency in one click.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">3</span>
+                  <span><span className="font-medium text-slate-900">Analytics</span> — track school-wide performance.</span>
+                </li>
+              </ol>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Quick Start Section */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <Play className="h-5 w-5 text-white" />
+      {/* What's New */}
+      <div className="rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50 p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="rounded-xl bg-emerald-600/10 p-2.5">
+            <Star className="h-5 w-5 text-emerald-700" />
+          </div>
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-emerald-900">
+              What's New
+              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">New</Badge>
+            </h2>
+            <p className="text-sm text-emerald-700">Two new ways to keep work moving — tap a card to jump in.</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory('all');
+              setExpandedSections((prev) => new Set(prev).add('review-queue'));
+            }}
+            className="group flex items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+          >
+            <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700 transition-colors group-hover:bg-emerald-200">
+              <ClipboardCheck className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-blue-900">🚀 Quick Start Guide</h2>
-              <p className="text-blue-700">Get up and running in just a few steps</p>
+              <div className="flex items-center gap-2 font-semibold text-slate-900">Review Queue</div>
+              <p className="mt-0.5 text-sm text-slate-600">
+                Approve submitted work, send it back, or complete it with feedback in one place.
+              </p>
             </div>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Teacher Quick Start */}
-            {(isTeacher || isAdmin) && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-blue-800 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs">
-                    👩‍🏫
-                  </div>
-                  For Teachers - First Steps
-                </h3>
-                <ol className="space-y-3 text-sm">
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-600 flex-shrink-0 mt-0.5">1</span>
-                    <div>
-                      <span className="font-medium">Start with the Dashboard</span> - View students and real-time progress
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-600 flex-shrink-0 mt-0.5">2</span>
-                    <div>
-                      <span className="font-medium">Create Tasks</span> - Go to "Manage Tasks" → Add assignments
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-xs font-bold text-emerald-600 flex-shrink-0 mt-0.5">3</span>
-                    <div>
-                      <span className="font-medium">Use Filters</span> - Click progress tiles to focus on student needs
-                    </div>
-                  </li>
-                </ol>
-              </div>
-            )}
-            
-            {/* Admin Quick Start */}
-            {isAdmin && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-blue-800 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs">
-                    👨‍💼
-                  </div>
-                  For Administrators - Setup
-                </h3>
-                <ol className="space-y-3 text-sm">
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-600 flex-shrink-0 mt-0.5">1</span>
-                    <div>
-                      <span className="font-medium">Add Users</span> - User Management → Create teachers/students
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-600 flex-shrink-0 mt-0.5">2</span>
-                    <div>
-                      <span className="font-medium">Sync Records</span> - Fix data consistency with sync button
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-600 flex-shrink-0 mt-0.5">3</span>
-                    <div>
-                      <span className="font-medium">Monitor Analytics</span> - Track system-wide performance
-                    </div>
-                  </li>
-                </ol>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory('all');
+              setExpandedSections((prev) => new Set(prev).add('analytics'));
+            }}
+            className="group flex items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+          >
+            <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700 transition-colors group-hover:bg-emerald-200">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 font-semibold text-slate-900">Attendance Insights</div>
+              <p className="mt-0.5 text-sm text-slate-600">
+                See historical trends and per-student rates, with low-attendance flags.
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
 
       {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search help topics... (e.g., 'create task', 'attendance', 'export report')"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setSearchTerm('');
-                  } else if (e.key === 'Enter' && searchTerm && filteredContent.length > 0) {
-                    // Expand all matching sections
-                    const newExpanded = new Set(expandedSections);
-                    filteredContent.forEach(item => newExpanded.add(item.id));
-                    setExpandedSections(newExpanded);
-                  }
-                }}
-                className="pl-10"
-              />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </Button>
-              )}
-            </div>
-            
-            {/* Category Filter */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map(category => {
-                const Icon = category.icon;
-                const isSelected = selectedCategory === category.id;
-                
-                // Filter categories based on user role
-                if (category.id === 'admin' && !isAdmin) return null;
-                
-                return (
-                  <Button
-                    key={category.id}
-                    variant={isSelected ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {category.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Search Results Summary */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search help topics… (e.g. 'review queue', 'attendance', 'create task')"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setSearchTerm('');
+              } else if (e.key === 'Enter' && searchTerm && filteredContent.length > 0) {
+                const newExpanded = new Set(expandedSections);
+                filteredContent.forEach(item => newExpanded.add(item.id));
+                setExpandedSections(newExpanded);
+              }
+            }}
+            className="h-11 rounded-xl border-slate-200 pl-11"
+          />
           {searchTerm && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm">
-                  <Search className="h-4 w-4 text-yellow-600" />
-                  <span className="text-yellow-800">
-                    Found <strong>{filteredContent.length}</strong> result{filteredContent.length !== 1 ? 's' : ''} for "{searchTerm}"
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                  className="text-yellow-700 hover:text-yellow-800 hover:bg-yellow-100"
-                >
-                  Clear search
-                </Button>
-              </div>
-              {filteredContent.length > 0 && (
-                <div className="mt-2 text-xs text-yellow-700">
-                  💡 Matching sections are automatically expanded and highlighted below
-                  <span className="ml-3 text-yellow-600">
-                    • Press <kbd className="px-1 py-0.5 bg-yellow-100 rounded text-xs">Enter</kbd> to expand all results
-                    • Press <kbd className="px-1 py-0.5 bg-yellow-100 rounded text-xs">Esc</kbd> to clear search
-                  </span>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            >
+              ×
+            </button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Category pills */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {categories.map(category => {
+            const Icon = category.icon;
+            const isSelected = selectedCategory === category.id;
+            if (category.id === 'admin' && !isAdmin) return null;
+
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setSelectedCategory(category.id)}
+                className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  isSelected
+                    ? 'border-blue-600 bg-blue-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {category.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search Results Summary */}
+        {searchTerm && (
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+            <span className="text-amber-800">
+              Found <strong>{filteredContent.length}</strong> result{filteredContent.length !== 1 ? 's' : ''} for "{searchTerm}"
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="rounded-md px-2 py-1 text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Help Content */}
       <div className="space-y-4">
@@ -673,19 +743,18 @@ const Help = () => {
               </p>
               
               {searchTerm && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-3">💡 Try searching for:</h4>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {['dashboard', 'create task', 'attendance', 'export report', 'user management', 'status filter', 'student progress'].map(suggestion => (
-                      <Button
+                <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                  <h4 className="mb-3 font-medium text-blue-900">Try searching for:</h4>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {['review queue', 'attendance', 'create task', 'export report', 'user management', 'student progress'].map(suggestion => (
+                      <button
                         key={suggestion}
-                        variant="outline"
-                        size="sm"
+                        type="button"
                         onClick={() => setSearchTerm(suggestion)}
-                        className="text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
+                        className="rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 hover:text-blue-900"
                       >
                         {suggestion}
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -698,29 +767,29 @@ const Help = () => {
             const isExpanded = expandedSections.has(item.id);
             
             return (
-              <Card key={item.id} className="overflow-hidden">
-                <CardHeader 
-                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+              <Card key={item.id} className={`overflow-hidden rounded-2xl border-slate-200 transition-shadow ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}`}>
+                <CardHeader
+                  className="cursor-pointer transition-colors hover:bg-slate-50"
                   onClick={() => toggleSection(item.id)}
                 >
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-6 w-6 text-blue-600" />
-                      <span dangerouslySetInnerHTML={{ __html: highlightSearchTerm(item.title) }} />
-                      <Badge variant="secondary" className="text-xs">
-                        {item.category}
-                      </Badge>
+                  <CardTitle className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${isExpanded ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="truncate text-base font-semibold text-slate-900" dangerouslySetInnerHTML={{ __html: highlightSearchTerm(item.title) }} />
+                      {'isNew' in item && item.isNew && (
+                        <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-xs text-white hover:from-emerald-500 hover:to-green-500">
+                          New
+                        </Badge>
+                      )}
                       {searchTerm && (
-                        <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-xs text-amber-700">
                           Match
                         </Badge>
                       )}
                     </div>
-                    {isExpanded ? (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
-                    )}
+                    <ChevronDown className={`h-5 w-5 flex-shrink-0 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                   </CardTitle>
                 </CardHeader>
                 
@@ -741,6 +810,11 @@ const Help = () => {
                                 {index + 1}
                               </div>
                               <span dangerouslySetInnerHTML={{ __html: highlightSearchTerm(section.title) }} />
+                              {'isNew' in section && section.isNew && (
+                                <Badge className="text-xs bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-500 hover:to-green-500">
+                                  New
+                                </Badge>
+                              )}
                               {sectionHasMatch && (
                                 <Badge variant="outline" className="text-xs bg-yellow-100 border-yellow-400 text-yellow-700 ml-2">
                                   🔍
@@ -779,35 +853,14 @@ const Help = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Lightbulb className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-blue-900">Quick Start Tips</h3>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <p className="font-medium text-blue-800">For New Teachers:</p>
-              <ul className="space-y-1 text-blue-700">
-                <li>• Start with the Dashboard to see your students</li>
-                <li>• Create your first task in "Manage Tasks"</li>
-                <li>• Check attendance daily using the Attendance tab</li>
-              </ul>
-            </div>
-            {isAdmin && (
-              <div className="space-y-2">
-                <p className="font-medium text-blue-800">For Administrators:</p>
-                <ul className="space-y-1 text-blue-700">
-                  <li>• Set up users in User Management first</li>
-                  <li>• Sync student records after adding users</li>
-                  <li>• Monitor system usage in Analytics</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Footer */}
+      <div className="flex flex-col items-center gap-1 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Lightbulb className="h-4 w-4 text-blue-600" />
+          Still stuck? Search above or contact your administrator.
+        </div>
+        <p className="text-xs text-slate-400">ARCC Student Progress Tracker</p>
+      </div>
     </div>
   );
 };

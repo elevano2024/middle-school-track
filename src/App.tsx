@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import Analytics from "./pages/Analytics";
 import Help from "./pages/Help";
+import ReviewQueue from "./pages/ReviewQueue";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,11 @@ const AppWithRealtime = () => {
         <Route path="/attendance" element={
           <ProtectedPageWrapper>
             <AttendanceManagement />
+          </ProtectedPageWrapper>
+        } />
+        <Route path="/review" element={
+          <ProtectedPageWrapper>
+            <ReviewQueue />
           </ProtectedPageWrapper>
         } />
         <Route path="/analytics" element={
