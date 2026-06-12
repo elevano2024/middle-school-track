@@ -189,13 +189,42 @@ export const useUserManagement = () => {
   };
 
   const resetUserPassword = async (email: string) => {
+    const redirectTo = window.location.origin + '/auth?mode=reset';
+
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth?mode=reset'
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error('You must be logged in to reset passwords');
+        return false;
+      }
+
+      // Primary path: send the reset link through Resend via our edge function.
+      // Supabase's built-in mailer is rate-limited and silently drops emails in
+      // production, which is why admins were not receiving reset links.
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { email, redirectTo },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      if (error) {
-        console.error('Error sending reset email:', error);
+      if (!error && data?.success) {
+        toast.success('Password reset email sent successfully');
+        return true;
+      }
+
+      // If the edge function isn't deployed or the email service isn't
+      // configured, fall back to the built-in mailer so behavior degrades
+      // gracefully rather than failing outright.
+      console.warn('reset-user-password edge function unavailable, falling back to built-in mailer:', error || data);
+
+      const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (fallbackError) {
+        console.error('Error sending reset email:', fallbackError);
         toast.error('Failed to send password reset email');
         return false;
       }
