@@ -294,8 +294,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onUpdateStatus }) => {
                 <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Task Management</div>
               </div>
               <div className="space-y-2">
-                {/* Feedback Button - Prominent for completed tasks */}
-                {task.status === 'completed' && (
+                {/* Feedback Button - available once work is ready for teacher review */}
+                {(task.status === 'ready-review' || task.status === 'completed') && (
                   <button
                     onClick={handleGiveFeedback}
                     className="w-full flex items-center gap-3 px-4 py-3 text-xs font-medium text-purple-700 bg-purple-50/70 hover:bg-purple-100/80 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-[1.01] active:scale-[0.99] border border-purple-100/60 hover:border-purple-200/80 group"

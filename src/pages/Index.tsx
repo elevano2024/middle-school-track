@@ -57,6 +57,22 @@ const Index = () => {
     console.log('Index: Today\'s attendance count:', todayAttendance.length);
   }, [isAdmin, isTeacher, isStudent, subjects, tasks, attendanceRecords]);
 
+  // Force more aggressive data refresh in presentation mode.
+  // Keep this hook above all returns so the hook order stays stable.
+  React.useEffect(() => {
+    if (!isPresentationMode) return;
+
+    const interval = setInterval(() => {
+      console.log('🔄 Presentation mode: Force refreshing data...');
+      refetchTasks();
+      refetchStudents();
+      refetchSubjects();
+      refetchAttendance();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isPresentationMode, refetchTasks, refetchStudents, refetchSubjects, refetchAttendance]);
+
   if (!user) {
     return (
       <div className="p-6">
@@ -127,6 +143,7 @@ const Index = () => {
       status: task.status,
       timeInStatus: task.time_in_status || 0,
       createdAt: task.created_at,
+      updatedAt: task.updated_at,
       teacher_feedback_type: task.teacher_feedback_type,
       teacher_feedback_message: task.teacher_feedback_message,
       teacher_next_steps: task.teacher_next_steps,
@@ -290,19 +307,6 @@ const Index = () => {
 
   // In presentation mode, only show the FleetBoard with minimal styling
   if (isPresentationMode) {
-    // Force more aggressive data refresh in presentation mode
-    React.useEffect(() => {
-      const interval = setInterval(() => {
-        console.log('🔄 Presentation mode: Force refreshing data...');
-        refetchTasks();
-        refetchStudents();
-        refetchSubjects();
-        refetchAttendance();
-      }, 5000); // Every 5 seconds in presentation mode
-
-      return () => clearInterval(interval);
-    }, [refetchTasks, refetchStudents, refetchSubjects, refetchAttendance]);
-
     return (
       <div className="w-full min-h-screen p-4">
         {/* Simple header for presentation mode */}

@@ -2,13 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTasks } from '@/hooks/useTasks';
 import { useStudents } from '@/hooks/useStudents';
+import type { Student } from '@/hooks/useStudents';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useAttendance } from '@/hooks/useAttendance';
+import { useAttendanceHistory } from '@/hooks/useAttendanceHistory';
 import { useUserRole } from '@/hooks/useUserRole';
 import StudentDetailsModal from '@/components/StudentDetailsModal';
 import HelpTooltip from '@/components/HelpTooltip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -30,7 +33,8 @@ import {
   Activity,
   UserCheck,
   FileText,
-  Zap
+  Zap,
+  Download
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
@@ -41,6 +45,7 @@ const Analytics = () => {
   const { students } = useStudents();
   const { subjects } = useSubjects();
   const { attendance } = useAttendance();
+  const { attendanceHistory } = useAttendanceHistory(isAdmin);
 
   // Modal state for student details
   const [selectedStudent, setSelectedStudent] = useState<{
@@ -50,9 +55,11 @@ const Analytics = () => {
     grade?: string;
   } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [attendanceStartDate, setAttendanceStartDate] = useState('');
+  const [attendanceEndDate, setAttendanceEndDate] = useState('');
 
   // Handle student row click
-  const handleStudentClick = (student: any) => {
+  const handleStudentClick = (student: Student) => {
     setSelectedStudent({
       id: student.id,
       name: student.name,
@@ -61,20 +68,6 @@ const Analytics = () => {
     });
     setIsModalOpen(true);
   };
-
-  // Redirect if not admin
-  if (!isAdmin) {
-    return (
-      <div className="p-6">
-        <Alert className="border-red-200 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-700">
-            Access denied. Analytics dashboard is only available to administrators.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   // Calculate analytics data
   const analytics = useMemo(() => {
@@ -97,6 +90,28 @@ const Analytics = () => {
         }
         return lastSchoolDay.toISOString().split('T')[0];
       }
+    };
+
+    const averageHoursBetween = (records: Array<{ created_at?: string; updated_at?: string; feedback_given_at?: string | null }>, endField: 'updated_at' | 'feedback_given_at') => {
+      const durations = records
+        .map((record) => {
+          const start = record.created_at ? new Date(record.created_at).getTime() : NaN;
+          const endValue = record[endField];
+          const end = endValue ? new Date(endValue).getTime() : NaN;
+          if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+          return (end - start) / (1000 * 60 * 60);
+        })
+        .filter((duration): duration is number => duration !== null);
+
+      if (durations.length === 0) return null;
+      return Math.round(durations.reduce((sum, duration) => sum + duration, 0) / durations.length);
+    };
+
+    const formatHours = (hours: number | null) => {
+      if (hours === null) return 'No data yet';
+      if (hours < 24) return `${hours}h`;
+      const days = Math.round((hours / 24) * 10) / 10;
+      return `${days}d`;
     };
 
     // Enhanced student performance metrics with feedback analysis
@@ -127,9 +142,7 @@ const Analytics = () => {
         ? Math.round((positiveFeedback.length / tasksWithFeedback.length) * 100)
         : 0;
 
-      // Calculate average time to completion (mock data for now)
-      const avgCompletionTime = completedTasks.length > 0 ? 
-        Math.round(Math.random() * 48 + 12) : 0; // 12-60 hours
+      const avgCompletionTime = averageHoursBetween(completedTasks, 'updated_at');
 
       return {
         id: student.id,
@@ -144,7 +157,7 @@ const Analytics = () => {
         completionRate,
         feedbackRate,
         positivityScore,
-        avgCompletionTime,
+        avgCompletionTime: formatHours(avgCompletionTime),
         positiveFeedback: positiveFeedback.length,
         negativeFeedback: negativeFeedback.length,
         neutralFeedback: neutralFeedback.length,
@@ -152,20 +165,23 @@ const Analytics = () => {
       };
     }).sort((a, b) => b.completionRate - a.completionRate);
 
+    const feedbackTasks = tasks.filter(task => task.teacher_feedback_type);
+    const completedTasksForFeedback = tasks.filter(task => task.status === 'completed');
+
     // Teacher feedback analytics
     const feedbackAnalytics = {
-      totalFeedbackGiven: tasks.filter(task => task.teacher_feedback_type).length,
+      totalFeedbackGiven: feedbackTasks.length,
       completedTasksWithFeedback: tasks.filter(task => 
         task.status === 'completed' && task.teacher_feedback_type
       ).length,
-      completedTasksTotal: tasks.filter(task => task.status === 'completed').length,
+      completedTasksTotal: completedTasksForFeedback.length,
       positiveFeedback: tasks.filter(task => task.teacher_feedback_type === 'thumbs_up').length,
       negativeFeedback: tasks.filter(task => task.teacher_feedback_type === 'thumbs_down').length,
       neutralFeedback: tasks.filter(task => task.teacher_feedback_type === 'neutral').length,
-      averageResponseTime: '4.2 hours', // Mock data - would calculate from feedback_given_at vs task completion
-      feedbackCompletionRate: tasks.filter(task => task.status === 'completed').length > 0 ?
+      averageResponseTime: formatHours(averageHoursBetween(feedbackTasks, 'feedback_given_at')),
+      feedbackCompletionRate: completedTasksForFeedback.length > 0 ?
         Math.round((tasks.filter(task => task.status === 'completed' && task.teacher_feedback_type).length / 
-                   tasks.filter(task => task.status === 'completed').length) * 100) : 0
+                   completedTasksForFeedback.length) * 100) : 0
     };
 
     // Subject performance analysis
@@ -216,6 +232,58 @@ const Analytics = () => {
     const activeStudents = new Set(tasks.map(task => task.student_id)).size;
     const engagementRate = students.length > 0 ? Math.round((activeStudents / students.length) * 100) : 0;
 
+    const filteredAttendanceHistory = attendanceHistory.filter((record) => {
+      if (attendanceStartDate && record.date < attendanceStartDate) return false;
+      if (attendanceEndDate && record.date > attendanceEndDate) return false;
+      return true;
+    });
+
+    const monthlyAttendance = Object.values(
+      filteredAttendanceHistory.reduce<Record<string, { month: string; present: number; total: number }>>((acc, record) => {
+        const month = record.date.slice(0, 7);
+        if (!acc[month]) acc[month] = { month, present: 0, total: 0 };
+        acc[month].total += 1;
+        if (record.is_present) acc[month].present += 1;
+        return acc;
+      }, {})
+    ).map((month) => ({
+      ...month,
+      rate: month.total > 0 ? Math.round((month.present / month.total) * 100) : 0,
+    })).sort((a, b) => a.month.localeCompare(b.month));
+
+    const studentAttendanceRates = students.map((student) => {
+      const records = filteredAttendanceHistory.filter(record => record.student_id === student.id);
+      const present = records.filter(record => record.is_present).length;
+      const rate = records.length > 0 ? Math.round((present / records.length) * 100) : null;
+
+      return {
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        present,
+        absent: records.length - present,
+        total: records.length,
+        rate,
+        chronicFlag: rate !== null && rate < 90
+      };
+    }).sort((a, b) => {
+      if (a.rate === null && b.rate === null) return a.name.localeCompare(b.name);
+      if (a.rate === null) return 1;
+      if (b.rate === null) return -1;
+      return a.rate - b.rate;
+    });
+
+    const attendanceInsights = {
+      totalRecords: filteredAttendanceHistory.length,
+      monthlyAttendance,
+      studentAttendanceRates,
+      chronicAbsenceCount: studentAttendanceRates.filter(student => student.chronicFlag).length,
+      perfectAttendanceCount: studentAttendanceRates.filter(student => student.rate === 100).length,
+      averageHistoricalRate: filteredAttendanceHistory.length > 0
+        ? Math.round((filteredAttendanceHistory.filter(record => record.is_present).length / filteredAttendanceHistory.length) * 100)
+        : null
+    };
+
     return {
       totalStudents: students.length,
       activeStudents,
@@ -230,13 +298,14 @@ const Analytics = () => {
       studentMetrics,
       feedbackAnalytics,
       subjectAnalytics,
+      attendanceInsights,
       topPerformers,
       strugglingStudents,
       mostPositiveFeedback,
       currentSchoolDay: getCurrentSchoolDay(),
       isCurrentlySchoolDay
     };
-  }, [students, tasks, subjects, attendance]);
+  }, [students, tasks, subjects, attendance, attendanceHistory, attendanceStartDate, attendanceEndDate]);
 
   // Simple bar chart component
   const SimpleBarChart = ({ data, title, colorClass = "bg-blue-500" }: { data: Record<string, number>, title: string, colorClass?: string }) => {
@@ -266,6 +335,56 @@ const Analytics = () => {
       </div>
     );
   };
+
+  const handleExportAttendanceCsv = () => {
+    const rows = analytics.attendanceInsights.studentAttendanceRates.map((student) => ({
+      Student: student.name,
+      Grade: student.grade,
+      Present: student.present,
+      Absent: student.absent,
+      Total: student.total,
+      'Attendance Rate': student.rate === null ? 'No data' : `${student.rate}%`,
+      Flag: student.chronicFlag ? 'Below 90%' : ''
+    }));
+
+    const headers = Object.keys(rows[0] || {
+      Student: '',
+      Grade: '',
+      Present: '',
+      Absent: '',
+      Total: '',
+      'Attendance Rate': '',
+      Flag: ''
+    });
+
+    const escapeCsv = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [
+      headers.map(escapeCsv).join(','),
+      ...rows.map((row) => headers.map((header) => escapeCsv(row[header as keyof typeof row])).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance-insights-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Redirect if not admin. Keep this after all hooks to preserve hook order.
+  if (!isAdmin) {
+    return (
+      <div className="p-6">
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            Access denied. Analytics dashboard is only available to administrators.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -853,7 +972,7 @@ const Analytics = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Students with Perfect Attendance</span>
                 <span className="font-medium text-emerald-600">
-                  {Math.floor(analytics.totalStudents * 0.75)} {/* Placeholder - you can calculate actual */}
+                  {analytics.attendanceInsights.perfectAttendanceCount}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -881,6 +1000,132 @@ const Analytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Attendance Insights - Historical */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-emerald-600" />
+              Attendance Insights
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportAttendanceCsv}>
+                <Download className="mr-2 h-4 w-4" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <FileText className="mr-2 h-4 w-4" />
+                Print
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2 md:col-span-1">
+              <label className="text-sm font-medium text-gray-700">From</label>
+              <Input
+                type="date"
+                value={attendanceStartDate}
+                onChange={(event) => setAttendanceStartDate(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-1">
+              <label className="text-sm font-medium text-gray-700">To</label>
+              <Input
+                type="date"
+                value={attendanceEndDate}
+                onChange={(event) => setAttendanceEndDate(event.target.value)}
+              />
+            </div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <div className="text-sm text-emerald-700">Historical Rate</div>
+              <div className="text-2xl font-bold text-emerald-900">
+                {analytics.attendanceInsights.averageHistoricalRate === null
+                  ? 'No data'
+                  : `${analytics.attendanceInsights.averageHistoricalRate}%`}
+              </div>
+              <div className="text-xs text-emerald-700">{analytics.attendanceInsights.totalRecords} records</div>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="text-sm text-amber-700">Below 90%</div>
+              <div className="text-2xl font-bold text-amber-900">{analytics.attendanceInsights.chronicAbsenceCount}</div>
+              <div className="text-xs text-amber-700">students to monitor</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <SimpleBarChart
+                data={analytics.attendanceInsights.monthlyAttendance.reduce((acc, month) => {
+                  acc[month.month] = month.rate;
+                  return acc;
+                }, {} as Record<string, number>)}
+                title="Monthly Attendance Rate"
+                colorClass="bg-gradient-to-r from-emerald-500 to-green-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-lg bg-blue-50 p-4 text-center border border-blue-200">
+                <div className="text-2xl font-bold text-blue-800">{analytics.attendanceInsights.perfectAttendanceCount}</div>
+                <div className="text-sm text-blue-700">Perfect Attendance</div>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-4 text-center border border-gray-200">
+                <div className="text-2xl font-bold text-gray-800">{analytics.attendanceInsights.monthlyAttendance.length}</div>
+                <div className="text-sm text-gray-700">Months Tracked</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Student</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Present</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Absent</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Rate</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Flag</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {analytics.attendanceInsights.studentAttendanceRates.map((student) => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{student.name}</div>
+                      <div className="text-xs text-gray-500">Grade {student.grade}</div>
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-700">{student.present}</td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-700">{student.absent}</td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge
+                        variant="outline"
+                        className={
+                          student.rate === null
+                            ? 'border-gray-200 text-gray-600'
+                            : student.rate < 90
+                              ? 'border-amber-200 text-amber-700'
+                              : 'border-emerald-200 text-emerald-700'
+                        }
+                      >
+                        {student.rate === null ? 'No data' : `${student.rate}%`}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {student.chronicFlag ? (
+                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Below 90%</Badge>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Student Details Modal */}
       <StudentDetailsModal

@@ -27,6 +27,21 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   console.log('FleetBoard props:', { students, subjects, tasks, statusFilter });
   const { isPresentationMode } = usePresentationMode();
 
+  const getAgeInMinutes = (dateValue?: string) => {
+    if (!dateValue) return 0;
+    const timestamp = new Date(dateValue).getTime();
+    if (Number.isNaN(timestamp)) return 0;
+    return Math.max(0, Math.floor((Date.now() - timestamp) / (1000 * 60)));
+  };
+
+  const formatAge = (minutes: number) => {
+    if (minutes < 60) return `${minutes} minutes`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 48) return `${hours} hours`;
+    const days = Math.floor(hours / 24);
+    return `${days} days`;
+  };
+
   const getTasksForStudentAndSubject = (studentId: string, subject: string): Task[] => {
     const studentTasks = tasks.filter(task => task.studentId === studentId);
     const subjectTasks = studentTasks.filter(task => task.subject === subject);
@@ -41,17 +56,23 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
   };
 
   const getStudentsNeedingAttention = () => {
-    const needingHelp = tasks.filter(task => 
-      task.status === 'need-help' && task.timeInStatus >= 5
-    );
+    const needingHelp = tasks.filter(task => {
+      const ageMinutes = getAgeInMinutes(task.updatedAt || task.createdAt);
+      return (
+        (task.status === 'need-help' && ageMinutes >= 30) ||
+        (task.status === 'ready-review' && ageMinutes >= 60 * 24 * 7)
+      );
+    });
     
     return needingHelp.map(task => {
       const student = students.find(s => s.id === task.studentId);
+      const ageMinutes = getAgeInMinutes(task.updatedAt || task.createdAt);
       return {
         studentName: student?.name || 'Unknown',
         taskTitle: task.title,
         subject: task.subject,
-        timeNeedingHelp: task.timeInStatus
+        timeNeedingHelp: formatAge(ageMinutes),
+        status: task.status
       };
     });
   };
@@ -178,7 +199,9 @@ const FleetBoard: React.FC<FleetBoardProps> = ({
             {attentionNeeded.map((item, index) => (
               <li key={index} className="text-sm text-amber-700 bg-white/60 rounded-lg p-3 border border-amber-200">
                 <strong className="text-amber-900">{item.studentName}</strong> - {item.subject}: {item.taskTitle} 
-                <span className="text-amber-600 font-medium"> (needs help for {item.timeNeedingHelp} minutes)</span>
+                <span className="text-amber-600 font-medium">
+                  {' '}({item.status === 'ready-review' ? 'waiting for review' : 'needs help'} for {item.timeNeedingHelp})
+                </span>
               </li>
             ))}
           </ul>

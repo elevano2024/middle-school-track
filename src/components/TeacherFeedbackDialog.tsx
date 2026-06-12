@@ -28,9 +28,10 @@ interface TeacherFeedbackDialogProps {
   task: Task | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  completeOnSave?: boolean;
 }
 
-export const TeacherFeedbackDialog = ({ task, open, onOpenChange }: TeacherFeedbackDialogProps) => {
+export const TeacherFeedbackDialog = ({ task, open, onOpenChange, completeOnSave = false }: TeacherFeedbackDialogProps) => {
   const { updateTask, isUpdating } = useTasks();
   const { user } = useAuth();
   const [selectedFeedbackType, setSelectedFeedbackType] = useState<TeacherFeedbackType>('thumbs_up');
@@ -60,7 +61,8 @@ export const TeacherFeedbackDialog = ({ task, open, onOpenChange }: TeacherFeedb
       ...data,
       teacher_feedback_type: selectedFeedbackType,
       feedback_given_at: new Date().toISOString(),
-      feedback_given_by: user.id
+      feedback_given_by: user.id,
+      ...(completeOnSave ? { status: 'completed' as const } : {})
     };
 
     updateTask({ 
@@ -130,7 +132,7 @@ export const TeacherFeedbackDialog = ({ task, open, onOpenChange }: TeacherFeedb
               <p className="text-sm text-blue-700 mb-2">{task.description}</p>
             )}
             <div className="text-xs text-blue-600">
-              Completed: {new Date(task.updated_at).toLocaleDateString('en-US', { 
+              Submitted: {new Date(task.updated_at).toLocaleDateString('en-US', { 
                 weekday: 'short', 
                 month: 'short', 
                 day: 'numeric',
@@ -227,7 +229,7 @@ export const TeacherFeedbackDialog = ({ task, open, onOpenChange }: TeacherFeedb
               disabled={isUpdating}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isUpdating ? 'Saving...' : 'Save Feedback'}
+              {isUpdating ? 'Saving...' : completeOnSave ? 'Complete & Save Feedback' : 'Save Feedback'}
             </Button>
           </DialogFooter>
         </form>

@@ -16,6 +16,7 @@ export interface Task {
   timeInStatus: number; // minutes in current status
   dueDate?: string;
   createdAt?: string;
+  updatedAt?: string;
   // Teacher feedback fields
   teacher_feedback_type?: 'thumbs_up' | 'thumbs_down' | 'neutral' | null;
   teacher_feedback_message?: string | null;
