@@ -85,8 +85,11 @@ serve(async (req) => {
       // An address that already exists is the single most common failure here:
       // returning it as a generic 400 left teachers with "Edge Function returned a
       // non-2xx status code" and no idea the student was already onboarded.
+      //
+      // Matched on the specific code/message rather than the 422 status, which Auth
+      // also uses for unrelated validation failures such as a weak password.
       const alreadyRegistered =
-        error.status === 422 ||
+        error.code === 'email_exists' ||
         /already (been )?registered|already exists/i.test(error.message ?? '')
 
       if (alreadyRegistered) {

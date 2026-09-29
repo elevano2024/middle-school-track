@@ -225,6 +225,14 @@ export const useUserManagement = () => {
     }
   };
 
+  /**
+   * Triggers a password reset for `email`.
+   *
+   * Resolves true only when an email was actually delivered. Callers show their own
+   * "email sent" confirmation on a true result, so a generated-but-undelivered link
+   * must not resolve true - the admin is told about that case by the toast raised in
+   * `presentUndeliveredResetLink`, which carries the link itself.
+   */
   const resetUserPassword = async (email: string) => {
     // Stored addresses can carry stray whitespace; recovery lookups match exactly.
     const normalizedEmail = email.trim();
@@ -280,10 +288,11 @@ export const useUserManagement = () => {
         return true;
       }
 
-      // The link was created but could not be emailed - hand it to the admin.
+      // The link was created but could not be emailed. Hand it to the admin and
+      // report false, so callers do not also claim an email was sent.
       if (data?.resetLink) {
         presentUndeliveredResetLink(normalizedEmail, data.resetLink as string);
-        return true;
+        return false;
       }
 
       console.error('Unexpected reset-user-password response:', data);
