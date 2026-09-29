@@ -2,6 +2,43 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { EDGE_ERROR_CODES, parseEdgeFunctionError } from '@/utils/edgeFunctionError';
+
+const copyToClipboard = async (value: string): Promise<boolean> => {
+  // Clipboard access requires a secure context and can be denied by the browser.
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Shown when a recovery link was created but could not be emailed. The link is the
+ * only thing that unblocks the student, so it is surfaced for the admin to pass on
+ * rather than discarded. It is also logged so it survives dismissing the toast.
+ */
+const presentUndeliveredResetLink = (email: string, resetLink: string) => {
+  console.info('Password reset link for', email, resetLink);
+
+  toast.warning(`Could not email ${email}`, {
+    description:
+      'Email delivery is unavailable. Copy the reset link and give it to the student directly — it expires in 1 hour.',
+    duration: Infinity,
+    action: {
+      label: 'Copy reset link',
+      onClick: async () => {
+        const copied = await copyToClipboard(resetLink);
+        if (copied) {
+          toast.success('Reset link copied to clipboard');
+        } else {
+          toast.error('Could not copy automatically — the link is in the browser console.');
+        }
+      },
+    },
+  });
+};
 
 interface Profile {
   id: string;
@@ -189,6 +226,8 @@ export const useUserManagement = () => {
   };
 
   const resetUserPassword = async (email: string) => {
+    // Stored addresses can carry stray whitespace; recovery lookups match exactly.
+    const normalizedEmail = email.trim();
     const redirectTo = window.location.origin + '/auth?mode=reset';
 
     try {
@@ -203,34 +242,53 @@ export const useUserManagement = () => {
       // Supabase's built-in mailer is rate-limited and silently drops emails in
       // production, which is why admins were not receiving reset links.
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
-        body: { email, redirectTo },
+        body: { email: normalizedEmail, redirectTo },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (!error && data?.success) {
+      if (error) {
+        const failure = await parseEdgeFunctionError(error);
+
+        // Falling back only helps when the function itself is missing. Retrying a
+        // rejected request through the rate-limited built-in mailer just produced a
+        // second failure (HTTP 429) and hid the real reason from the user.
+        if (!failure.unreachable) {
+          toast.error(failure.message, { description: failure.details ?? undefined });
+          return false;
+        }
+
+        console.warn('reset-user-password unavailable, falling back to built-in mailer:', failure);
+
+        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo,
+        });
+
+        if (fallbackError) {
+          console.error('Error sending reset email:', fallbackError);
+          toast.error(fallbackError.message || 'Failed to send password reset email');
+          return false;
+        }
+
         toast.success('Password reset email sent successfully');
         return true;
       }
 
-      // If the edge function isn't deployed or the email service isn't
-      // configured, fall back to the built-in mailer so behavior degrades
-      // gracefully rather than failing outright.
-      console.warn('reset-user-password edge function unavailable, falling back to built-in mailer:', error || data);
-
-      const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
-
-      if (fallbackError) {
-        console.error('Error sending reset email:', fallbackError);
-        toast.error('Failed to send password reset email');
-        return false;
+      if (data?.delivered) {
+        toast.success('Password reset email sent successfully');
+        return true;
       }
 
-      toast.success('Password reset email sent successfully');
-      return true;
+      // The link was created but could not be emailed - hand it to the admin.
+      if (data?.resetLink) {
+        presentUndeliveredResetLink(normalizedEmail, data.resetLink as string);
+        return true;
+      }
+
+      console.error('Unexpected reset-user-password response:', data);
+      toast.error('Failed to send password reset email');
+      return false;
     } catch (error) {
       console.error('Error sending reset email:', error);
       toast.error('Failed to send password reset email');
@@ -239,6 +297,9 @@ export const useUserManagement = () => {
   };
 
   const createNewUser = async (email: string, password: string, fullName: string) => {
+    const normalizedEmail = email.trim();
+    const normalizedFullName = fullName.trim();
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -249,9 +310,9 @@ export const useUserManagement = () => {
 
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
-          email: email,
+          email: normalizedEmail,
           password: password,
-          fullName: fullName
+          fullName: normalizedFullName
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -259,8 +320,22 @@ export const useUserManagement = () => {
       });
 
       if (error) {
-        console.error('Error creating user:', error);
-        toast.error(`Failed to create user: ${error.message}`);
+        const failure = await parseEdgeFunctionError(error);
+        console.error('Error creating user:', failure);
+
+        // A student who already has an account is the most common failure. Say so
+        // explicitly, because the generic invoke message ("non-2xx status code")
+        // read as though the account could not be created at all.
+        if (failure.code === EDGE_ERROR_CODES.emailAlreadyRegistered) {
+          toast.error(failure.message, {
+            description:
+              failure.details ?? 'Use "Reset Password" for this student instead of creating a new account.',
+            duration: 10000,
+          });
+          return false;
+        }
+
+        toast.error(`Failed to create user: ${failure.message}`);
         return false;
       }
 
@@ -273,7 +348,7 @@ export const useUserManagement = () => {
           .from('students')
           .upsert({
             id: newUserId,
-            name: fullName || 'Unknown Name',
+            name: normalizedFullName || 'Unknown Name',
             grade: '7' as const, // Default grade — teacher can change later
           })
           .select();
