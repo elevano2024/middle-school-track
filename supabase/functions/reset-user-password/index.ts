@@ -125,21 +125,16 @@ serve(async (req) => {
       )
     }
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    if (!resendApiKey) {
-      console.error('RESEND_API_KEY not found in environment variables')
-      return new Response(
-        JSON.stringify({ error: 'Email service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Stored addresses sometimes carry trailing whitespace from roster copy/paste,
+    // and recovery lookups match exactly - an untrimmed address fails as "user not found".
+    const normalizedEmail = String(email).trim()
 
-    // Generate a password recovery link using the admin API.
-    // This works regardless of the built-in email rate limits because we
-    // deliver the link ourselves through Resend.
+    // Generate the recovery link BEFORE attempting delivery. The link is the part
+    // that actually unblocks a locked-out student, so it must be produced even when
+    // the email provider is misconfigured or rejecting sends.
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
-      email,
+      email: normalizedEmail,
       options: redirectTo ? { redirectTo } : undefined,
     })
 
@@ -155,6 +150,28 @@ serve(async (req) => {
     const resetLink = linkData.properties.action_link
     const schoolName = 'Rising Sun Montessori'
     const fromAddress = Deno.env.get('RESET_EMAIL_FROM') ?? 'ARCC <onboarding@resend.dev>'
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+
+    // Undelivered responses still return the link so an admin or teacher can pass it
+    // to the student directly. This is gated by the admin/teacher check above, and
+    // those roles can already initiate a reset for the account.
+    const undeliveredResponse = (reason: string, details?: string) =>
+      new Response(
+        JSON.stringify({
+          success: false,
+          delivered: false,
+          reason,
+          details,
+          resetLink,
+          message: `Could not email ${normalizedEmail}. Share the reset link directly instead.`,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY not set - returning link without sending')
+      return undeliveredResponse('email_not_configured')
+    }
 
     // Send the reset email through Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -165,7 +182,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: fromAddress,
-        to: [email],
+        to: [normalizedEmail],
         subject: 'Reset your ARCC password',
         html: createResetEmailTemplate(resetLink, schoolName),
         text: `Reset your ARCC password by visiting this link (expires in 1 hour):\n\n${resetLink}\n\nIf you didn't request this, you can ignore this email.`,
@@ -175,10 +192,7 @@ serve(async (req) => {
     if (!emailResponse.ok) {
       const errorData = await emailResponse.text()
       console.error('Resend API error:', errorData)
-      return new Response(
-        JSON.stringify({ error: 'Failed to send reset email', details: errorData }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return undeliveredResponse('delivery_failed', errorData)
     }
 
     const emailResult = await emailResponse.json()
@@ -187,8 +201,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        delivered: true,
         emailId: emailResult?.id,
-        message: `Password reset email sent to ${email}`,
+        message: `Password reset email sent to ${normalizedEmail}`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

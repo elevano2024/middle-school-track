@@ -63,18 +63,46 @@ serve(async (req) => {
       )
     }
 
+    // Rosters are copied in by hand, so stray whitespace is common. An untrimmed
+    // address creates an account that no lookup (including password recovery) can
+    // find again.
+    const normalizedEmail = String(email).trim()
+    const normalizedFullName = String(fullName).trim()
+
     // Create the user using admin client
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: normalizedEmail,
       password,
       user_metadata: {
-        full_name: fullName
+        full_name: normalizedFullName
       },
       email_confirm: true
     })
 
     if (error) {
       console.error('Error creating user:', error)
+
+      // An address that already exists is the single most common failure here:
+      // returning it as a generic 400 left teachers with "Edge Function returned a
+      // non-2xx status code" and no idea the student was already onboarded.
+      //
+      // Matched on the specific code/message rather than the 422 status, which Auth
+      // also uses for unrelated validation failures such as a weak password.
+      const alreadyRegistered =
+        error.code === 'email_exists' ||
+        /already (been )?registered|already exists/i.test(error.message ?? '')
+
+      if (alreadyRegistered) {
+        return new Response(
+          JSON.stringify({
+            error: `An account already exists for ${normalizedEmail}.`,
+            code: 'email_already_registered',
+            details: 'Send this student a password reset instead of creating a new account.',
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       return new Response(
         JSON.stringify({ error: error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
