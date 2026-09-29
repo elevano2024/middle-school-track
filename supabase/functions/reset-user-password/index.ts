@@ -149,7 +149,9 @@ serve(async (req) => {
 
     const resetLink = linkData.properties.action_link
     const schoolName = 'Rising Sun Montessori'
-    const fromAddress = Deno.env.get('RESET_EMAIL_FROM') ?? 'ARCC <onboarding@resend.dev>'
+    // Sending requires risingsunmontessori.org to be verified in Resend; the domain's
+    // DMARC policy is p=reject, so this sender cannot be served by any other provider.
+    const fromAddress = Deno.env.get('RESET_EMAIL_FROM') ?? 'ARCC <noreply@risingsunmontessori.org>'
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
 
     // Undelivered responses still return the link so an admin or teacher can pass it
